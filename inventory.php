@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>INVENTORY - Add Product - DANCO LOGISTICS SYSTEM</title>
+  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+  <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+  <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/js/all.min.js"></script>
+  <link rel="stylesheet" href="css/inventory.css">
+  
+</head>
+<body>
+<div class="sidebar">
+    <a href="dashboard.php"><i class="fas fa-arrow-left"></i> Back to Dashboard</a>
+</div>
+
+  
+  
+  <div class="container-fluid mt-1 col-md-9">
+    <h1 class="text-center"><b><u><i>DLMS Inventory Management</b></u></i></h1>
+
+    <!-- Search Bar -->
+    <div class="form-group mt-3" style="width: 300px; float: right;">
+      <label for="search-bar">Search by Stock Code</label>
+      <div class="input-group">
+        <input type="text" class="form-control" id="search-bar" placeholder="Enter stock code">
+        <div class="input-group-append">
+          <button class="btn btn-outline-secondary" type="button" id="searchButton">
+            <i class="fas fa-search"></i> Search
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Add Product Button -->
+    <button id="showAddProductFormBtn" class="btn btn-primary mb-12 mt-1" data-toggle="modal" data-target="#addProductModal">
+      <i class="fas fa-plus-circle"></i> Add Product
+    </button>
+
+    <!-- Add Product Modal -->
+    <div class="modal fade" id="addProductModal" tabindex="-1" role="dialog" aria-labelledby="addProductModalLabel" aria-hidden="true">
+      <div class="modal-dialog" role="document">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="addProductModalLabel">Add Product</h5>
+            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+              <span aria-hidden="true">&times;</span>
+            </button>
+          </div>
+          <div class="modal-body">
+            <form method="POST" action="add_product.php" id="addProductForm"> <!-- Update action to PHP file -->
+              <div class="form-group">
+                <label for="description">Description</label>
+                <input type="text" class="form-control" id="description" name="description" required>
+              </div>
+              <div class="form-group">
+                <label for="stock_code">Stock Code</label>
+                <input type="text" class="form-control" id="stock_code" name="stock_code" required>
+              </div>
+              <div class="form-group">
+                <label for="product">Product</label>
+                <select class="form-control" id="product" name="product" required>
+                  <option value="">Select a product</option>
+                  <option value="HDPE">HDPE</option>
+                  <option value="PPR">PPR</option>
+                  <option value="DWC">DWC</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label for="unit_of_measure">Unit of Measure</label>
+                <select class="form-control" id="unit_of_measure" name="unit_of_measure" required>
+                  <option value="">Select unit of measure</option>
+                  <option value="Rolls">Rolls</option>
+                  <option value="Pieces">Pieces</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label for="metres">Length</label>
+                <input type="number" step="0.01" class="form-control" id="metres" name="metres" required>
+              </div>
+              <div class="form-group">
+                <label for="weight_per_metre">Weight/Metre</label>
+                <input type="number" step="0.01" class="form-control" id="weight_per_metre" name="weight_per_metre" required>
+              </div>
+              <button type="submit" class="btn btn-primary">
+                <i class="fas fa-check-circle"></i> Add Product
+              </button>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Product Table -->
+    <table class="table mt-3" id="productTable">
+      <thead class="thead-light">
+        <tr>
+          <th>#</th>
+          <th>Description</th>
+          <th>Stock Code</th>
+          <th>Product</th>
+          <th>Unit of Measure</th>
+          <th>Metres</th>
+          <th>Weight/Metre</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
+
+  
+</body>
+</html>

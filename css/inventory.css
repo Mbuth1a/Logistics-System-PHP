@@ -1,0 +1,107 @@
+body {
+    background-color: #f7f7f7;
+    color: #333;
+  }
+  
+  h1 {
+    color: #ff6600;
+  }
+  
+  .btn-primary {
+    background-color: aqua;
+    border-color: #e65c00;
+  }
+  
+  .btn-primary:hover {
+    background-color: #e65c00;
+    border-color: #e65c00;
+  }
+  
+  .table thead th {
+    background-color: #ff6600;
+    color: white;
+  }
+  
+  .table tbody tr:hover {
+    background-color: #f2f2f2;
+  }
+  
+  .input-group .btn-outline-secondary {
+    color: #ff6600;
+    border-color: #ff6600;
+  }
+  
+  .input-group .btn-outline-secondary:hover {
+    color: white;
+    background-color: #ff6600;
+    border-color: #ff6600;
+  }
+  
+  .modal-header {
+    background-color: #ff6600;
+    color: white;
+  }
+  
+  .modal-content {
+    border-color: #ff6600;
+  }
+  
+  .form-group label {
+    color: #333;
+  }
+  
+  .form-control {
+    border-color: #ccc;
+  }
+  
+  .sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 200px;
+    height: 100%;
+    background-color: #343a40;
+    padding-top: 20px;
+    z-index: 1000; /* Ensure sidebar is above content */
+  }
+  
+  .sidebar a {
+    color: #fff;
+    padding: 15px;
+    text-decoration: none;
+    display: block;
+  }
+  
+  .sidebar a:hover {
+    background-color: #ff8c00;
+  }
+  
+  .main-content {
+    margin-left: 20px; /* Adjust margin to avoid overlap with sidebar */
+    padding: 20px;
+  }
+  
+  .back-button {
+    display: inline-block;
+    padding: 10px 15px;
+    background-color: #343a40;
+    color: #fff;
+    border: none;
+    cursor: pointer;
+  }
+  
+  .back-button:hover {
+    background-color: #ff8c00;
+  }
+  
+  @media (max-width: 768px) {
+    .sidebar {
+      width: 100%;
+      height: auto;
+      position: relative;
+    }
+    
+    .main-content {
+      margin-left: 0;
+    }
+  }

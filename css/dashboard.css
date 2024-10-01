@@ -1,0 +1,119 @@
+  /* Ensure the chart container fills the height of the display device */
+  .chart-container {
+    position: relative;
+    height: calc(100vh - 300px); /* Adjust the chart to fill the screen minus margins */
+    width: 90%; /* Full width of the container */
+    max-height: 600px; /* Optional: to limit the maximum height */
+}
+
+canvas {
+    display: block;
+    width: 90%;
+    height: 90%;
+}
+
+body {
+    margin: 0;
+    padding: 0;
+    font-family: Arial, sans-serif;
+    background-color: #f0f0f0;
+}
+
+.sidebar {
+    background-color: #333;
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    width: 250px;
+    padding: 20px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    z-index: 1;
+}
+
+.sidebar h2 {
+    color: #ff8c00;
+}
+
+.sidebar .nav .nav-item .nav-link {
+    color: #fff;
+    cursor: pointer;
+}
+
+.sidebar .nav .nav-item .nav-link:hover {
+    background-color: #ff8c00;
+    color: #fff;
+}
+
+.navbar {
+    background-color: #333;
+    color: white;
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    padding: 10px 20px;
+    position: fixed;
+    top: 0;
+    left: 250px;
+    width: calc(100% - 250px);
+    z-index: 2;
+}
+
+.navbar .btn {
+    background-color: #fd7e14;
+    border-color: #fd7e14;
+    color: white;
+}
+
+.navbar .btn:hover {
+    background-color: #e96b0d;
+    border-color: #e96b0d;
+}
+
+.container {
+    margin-left: 250px;
+    padding: 20px;
+    margin-top: 60px;
+}
+
+.card {
+    background-color: #fff;
+    border-radius: 4px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    margin-bottom: 20px;
+    padding: 20px;
+    flex: 1;
+    margin: 2px; /* Small margin around the cards */
+}
+
+/* Flex container for cards */
+.row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1px; /* Adjust gap between cards */
+}
+
+.col-lg-3 {
+    flex: 1;
+    min-width: calc(10% - 5px); /* Adjust for small margin */
+}
+
+@media (max-width: 768px) {
+    .chart-container {
+        height: 400px; /* Adjust height for smaller screens */
+    }
+}
+
+@media (max-width: 576px) {
+    .chart-container {
+        height: 300px; /* Further adjustment for very small screens */
+    }
+
+    .col-lg-3 {
+        min-width: calc(25% - 10px); /* Adjust for small screens */
+    }
+}
+
+.sub-menu {
+    display: none;
+}
