@@ -1,3 +1,72 @@
+<?php
+// Include the database connection file
+require 'connection.php'; // Ensure this path is correct
+
+// Initialize an empty array for errors
+$errors = [];
+
+// Check if the request method exists and is POST
+if (isset($_SERVER['REQUEST_METHOD']) && $_SERVER['REQUEST_METHOD'] === 'POST') {
+    // Validate form data
+    if (empty($_POST['full_name'])) {
+        $errors[] = 'Full Name is required.';
+    }
+    if (empty($_POST['employee_number'])) {
+        $errors[] = 'Employee Number is required.';
+    }
+    if (empty($_POST['license_number'])) {
+        $errors[] = 'License Number is required.';
+    }
+    if (empty($_POST['phone_number'])) {
+        $errors[] = 'Phone Number is required.';
+    }
+    if (empty($_POST['email'])) {
+        $errors[] = 'Email is required.';
+    } elseif (!filter_var($_POST['email'], FILTER_VALIDATE_EMAIL)) {
+        $errors[] = 'Invalid email format.';
+    }
+
+    // If no errors, proceed with inserting into the database
+    if (empty($errors)) {
+        // Sanitize form inputs
+        $full_name = htmlspecialchars($_POST['full_name']);
+        $employee_number = htmlspecialchars($_POST['employee_number']);
+        $license_number = htmlspecialchars($_POST['license_number']);
+        $phone_number = htmlspecialchars($_POST['phone_number']);
+        $email = htmlspecialchars($_POST['email']);
+
+        // Insert data into the database
+        try {
+            // Prepare an SQL statement
+            $stmt = $pdo->prepare("INSERT INTO drivers (full_name, employee_number, license_number, phone_number, email) 
+                                    VALUES (:full_name, :employee_number, :license_number, :phone_number, :email)");
+
+            // Bind parameters
+            $stmt->bindParam(':full_name', $full_name);
+            $stmt->bindParam(':employee_number', $employee_number);
+            $stmt->bindParam(':license_number', $license_number);
+            $stmt->bindParam(':phone_number', $phone_number);
+            $stmt->bindParam(':email', $email);
+
+            // Execute the statement
+            $stmt->execute();
+
+            // Success message
+            echo "<p style='color:green;'>Driver added successfully!</p>";
+        } catch (PDOException $e) {
+            // Handle any errors during the query execution
+            echo "<p style='color:red;'>Error: " . $e->getMessage() . "</p>";
+        }
+    } else {
+        // Display errors
+        foreach ($errors as $error) {
+            echo "<p style='color:red;'>$error</p>";
+        }
+    }
+} else {
+    echo "<p style='color:red;'>Form submission failed. Please use the correct method (POST).</p>";
+}
+?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -7,7 +76,6 @@
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
     <link rel="stylesheet" href="css/add_driver.css"> <!-- Update path accordingly -->
-    <script src="path/to/your/static/add_driver.js"></script> <!-- Update path accordingly -->
 </head>
 <body>
     <!-- Sidebar -->
@@ -18,11 +86,9 @@
     <!-- Main Content -->
     <div class="container-fluid col-md-10" style="margin-left: 250px;"> <!-- Adjust margin to accommodate sidebar width -->
         <h2><i class="fas fa-user-plus"></i> Add New Driver</h2>
-        
-        <!-- Step 7: Add the CSRF token in the form -->
-        <form id="addDriverForm" method="post" action="add_driver.php">
-            <input type="hidden" name="csrf_token" value=""> <!-- CSRF Token -->
-            
+
+        <!-- Driver Form -->
+        <form action="add_driver.php" method="post">
             <div class="form-row">
                 <div class="form-group col-md-12">
                     <label for="full_name"><i class="fas fa-user"></i> Full Name</label>
@@ -40,7 +106,6 @@
             <div class="form-group">
                 <label for="phone_number"><i class="fas fa-phone"></i> Phone Number</label>
                 <input type="tel" class="form-control" id="phone_number" name="phone_number" required>
-                <small id="phoneError" class="form-text text-danger"></small>
             </div>
             <div class="form-group">
                 <label for="email"><i class="fas fa-envelope"></i> Email</label>
