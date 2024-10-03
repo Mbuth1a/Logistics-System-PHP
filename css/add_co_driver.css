@@ -105,3 +105,28 @@ body {
 .back-btn:hover {
     background-color: #e66700; /* Darker orange on hover */
 }
+
+.navbar {
+    background-color: #333;
+    color: white;
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    padding: 10px 20px;
+    position: fixed;
+    top: 0;
+    left: 250px;
+    width: calc(100% - 250px);
+    z-index: 2;
+}
+
+.navbar .btn {
+    background-color: #fd7e14;
+    border-color: #fd7e14;
+    color: white;
+}
+
+.navbar .btn:hover {
+    background-color: #e96b0d;
+    border-color: #e96b0d;
+}

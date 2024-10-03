@@ -25,11 +25,7 @@
               <i class="fas fa-user-plus"></i> Add Driver
             </a>
           </li>
-          <li class="nav-item">
-            <a class="nav-link" href="manage_driver.php">
-              <i class="fas fa-users"></i> Manage Drivers
-            </a>
-          </li>
+          
         </ul>
       </li>
       <li class="nav-item">
@@ -42,11 +38,7 @@
               <i class="fas fa-user-plus"></i> Add Co-Driver
             </a>
           </li>
-          <li class="nav-item">
-            <a class="nav-link" href="manage_co_driver.php">
-              <i class="fas fa-users"></i> Manage Co-Drivers
-            </a>
-          </li>
+          
         </ul>
       </li>
       <li class="nav-item">
@@ -59,11 +51,7 @@
               <i class="fas fa-user-plus"></i> Add Vehicle
             </a>
           </li>
-          <li class="nav-item">
-            <a class="nav-link" href="manage_vehicle.php">
-              <i class="fas fa-book-open"></i> Manage Vehicles
-            </a>
-          </li>
+          
         </ul>
       </li>
       <li class="nav-item">

@@ -1,93 +1,152 @@
+<?php
+include 'connection.php';
+
+// Initialize drivers array
+$co_drivers = [];
+
+if (isset($_SERVER['REQUEST_METHOD']) && $_SERVER['REQUEST_METHOD'] === 'POST') {
+    // Capture form data
+    $full_name = $_POST['full_name'];
+    $employee_number = $_POST['employee_number'];
+    $phone_number = $_POST['phone_number'];
+    $email = $_POST['email'];
+
+    // Insert data into the database
+    $stmt = $conn->prepare("INSERT INTO co_drivers (full_name, employee_number, phone_number, email) VALUES (?, ?, ?, ?)");
+    $stmt->bind_param("ssss", $full_name, $employee_number, $phone_number, $email);
+
+    if ($stmt->execute()) {
+        echo "Success";
+    } else {
+        echo "Failed: " . $stmt->error; // Show error if insert fails
+    }
+
+    $stmt->close();
+}
+
+// Fetch registered drivers
+$result = $conn->query("SELECT * FROM co_drivers");
+if ($result) {
+    $co_drivers = $result->fetch_all(MYSQLI_ASSOC);
+}
+$conn->close();
+?>
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Add New Co-Driver - DANCO LTD Logistics System</title>
+    <title>Manage Co-Drivers - DANCO LTD Logistics System</title>
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
-    <link rel="stylesheet" href="css/add_co_driver.css"> <!-- Assuming your CSS file is in the same directory -->
-    <style>
-        /* General styles */
-
-    </style>
+    <link rel="stylesheet" href="css/add_driver.css"> <!-- Update path accordingly -->
 </head>
 <body>
     <!-- Sidebar -->
     <div class="sidebar">
         <a href="dashboard.php"><i class="fas fa-arrow-left"></i> Back to Dashboard</a>
     </div>
-
-
+    
     <!-- Main Content -->
-    <div class="content">
-        <div class="container-fluid mt-5 col-md-12">
-            <h2><i class="fas fa-user-friends"></i> Add New Co-Driver</h2>
-            <form id="addCoDriverForm" method="post" action="add_co_driver.php"> <!-- Update the action URL to your PHP processing file -->
-                <input type="hidden" name="csrf_token" value=""> <!-- CSRF Token -->
+    <div class="container-fluid col-md-10" style="margin-left: 250px;"> <!-- Adjust margin to accommodate sidebar width -->
+        <h2><i class="fas fa-user-plus"></i> Manage Co-Drivers</h2>
+        <div class="modal-body">
+            <!-- Button to trigger modal -->
+            <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#addDriverModal">
+                <i class="fas fa-plus"></i> Add Co-Driver
+            </button>
 
-                <!-- Employee Number Field -->
-                <div class="form-group">
-                    <label for="employeeNumber">Employee Number</label>
-                    <input type="text" name="employee_number" class="form-control" id="employeeNumber" required placeholder="DCL-123" pattern="DCL.*" title="Employee number must start with 'DCL'">
+            <!-- Driver Form Modal -->
+            <div class="modal fade" id="addDriverModal" tabindex="-1" aria-labelledby="addDriverModalLabel" aria-hidden="true">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title" id="addDriverModalLabel"><i class="fas fa-user-plus"></i> Add New Co-Driver</h5>
+                            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                <span aria-hidden="true">&times;</span>
+                            </button>
+                        </div>
+                        
+                        <!-- Driver Form inside modal -->
+                        <form action = "add_co_driver.php" method="POST">
+                            <div class="form-group">
+                                <label for="full_name"><i class="fas fa-user"></i> Full Name</label>
+                                <input type="text" class="form-control" id="full_name" name="full_name" required autofocus>
+                            </div>
+                            <div class="form-group">
+                                <label for="employee_number"><i class="fas fa-user-tag"></i> Employee Number</label>
+                                <input type="text" class="form-control" id="employee_number" name="employee_number" required>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="phone_number"><i class="fas fa-phone"></i> Phone Number</label>
+                                <input type="tel" class="form-control" id="phone_number" name="phone_number" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="email"><i class="fas fa-envelope"></i> Email</label>
+                                <input type="email" class="form-control" id="email" name="email" required>
+                                <small id="emailHelp" class="form-text text-muted">Please enter an email with @gmail.com domain.</small>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                                <button type="submit" name="save_driver" class="btn btn-primary" value="Save">SAVE</button>
+                            </div>
+                        </form>
+                    </div>
                 </div>
-
-                <!-- Co-Driver Name Field -->
-                <div class="form-group">
-                    <label for="coDriver">Co-driver Name</label>
-                    <input type="text" name="co_driver_name" class="form-control" id="coDriver" required placeholder="Co-driver Name">
-                </div>
-
-                <!-- Phone Number Field -->
-                <div class="form-group">
-                    <label for="phoneNumber">Phone Number</label>
-                    <input type="text" name="phone_number" class="form-control" id="phoneNumber" required placeholder="Phone Number" pattern="\d{10}" title="Phone number must be exactly 10 digits.">
-                </div>
-
-                <!-- Email Address Field -->
-                <div class="form-group">
-                    <label for="emailAddress">Email Address</label>
-                    <input type="email" name="email_address" class="form-control" id="emailAddress" required placeholder="Email Address (@gmail.com)" pattern="[a-z0-9._%+-]+@gmail\.com" title="Email address must end with '@gmail.com'">
-                </div>
-
-                <button type="submit" class="btn btn-primary btn-block"><i class="fas fa-paper-plane"></i> Submit</button>
-            </form>
+            </div>
         </div>
-    </div>
 
-    <!-- JavaScript for Form Validation and Back to Dashboard Functionality -->
+        <!-- Drivers Table -->
+        <!-- Drivers Table -->
+<div class="mt-4">
+    <h3>Registered Co-Drivers</h3>
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th scope="col">#</th>
+                <th scope="col">Full Name</th>
+                <th scope="col">Employee Number</th>
+                <th scope="col">Phone Number</th>
+                <th scope="col">Email</th>
+                <th scope="col">Actions</th> <!-- New column for actions -->
+            </tr>
+        </thead>
+        <tbody>
+            <?php if (!empty($co_drivers)): ?>
+                <?php foreach ($co_drivers as $index => $co_driver): ?>
+                    <tr>
+                        <th scope="row"><?= $index + 1 ?></th>
+                        <td><?= htmlspecialchars($co_driver['full_name']) ?></td>
+                        <td><?= htmlspecialchars($co_driver['employee_number']) ?></td>
+                        <td><?= htmlspecialchars($co_driver['phone_number']) ?></td>
+                        <td><?= htmlspecialchars($co_driver['email']) ?></td>
+                        <td>
+                            <!-- Action buttons for Update and Delete -->
+                            <a href="update_co_driver.php?id=<?= $co_driver['id'] ?>" class="btn btn-warning btn-sm">
+                                <i class="fas fa-edit"></i> Update
+                            </a>
+                            <a href="delete_co_driver.php?id=<?= $co_driver['id'] ?>" class="btn btn-danger btn-sm" onclick="return confirm('Are you sure you want to delete this co-driver?');">
+                                <i class="fas fa-trash"></i> Delete
+                            </a>
+                        </td>
+                    </tr>
+                <?php endforeach; ?>
+            <?php else: ?>
+                <tr>
+                    <td colspan="6" class="text-center">No Co-drivers registered yet.</td>
+                </tr>
+            <?php endif; ?>
+        </tbody>
+    </table>
+</div>
+
+    </div>
+    
+    <!-- Dependencies -->
     <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.1/dist/umd/popper.min.js"></script>
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
-    <script>
-      
-
-        document.getElementById('addCoDriverForm').addEventListener('submit', function(event) {
-            var employeeNumber = document.getElementById('employeeNumber').value;
-            var phoneNumber = document.getElementById('phoneNumber').value;
-            var emailAddress = document.getElementById('emailAddress').value;
-
-            // Check if phone number is exactly 10 digits
-            if (phoneNumber.length !== 10) {
-                alert('Phone number must be exactly 10 digits.');
-                event.preventDefault(); // Prevent form submission
-                return;
-            }
-
-            // Check if employee number starts with 'DCL'
-            if (!employeeNumber.startsWith('DCL')) {
-                alert('Employee number must start with "DCL".');
-                event.preventDefault(); // Prevent form submission
-                return;
-            }
-
-            // Check if email address ends with '@gmail.com'
-            if (!emailAddress.endsWith('@gmail.com')) {
-                alert('Email address must end with "@gmail.com".');
-                event.preventDefault(); // Prevent form submission
-                return;
-            }
-        });
-    </script>
 </body>
 </html>

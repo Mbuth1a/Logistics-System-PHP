@@ -1,3 +1,38 @@
+<?php
+include 'connection.php';
+
+// Initialize drivers array
+$products = [];
+
+if (isset($_SERVER['REQUEST_METHOD']) && $_SERVER['REQUEST_METHOD'] === 'POST') {
+    // Capture form data
+    $product_description = $_POST['product_description'];
+    $stock_code = $_POST['stock_code'];
+    $product = $_POST['product'];
+    $unit_of_measure = $_POST['unit_of_measure'];
+    $metres = $_POST['metres'];
+    $weight_per_metre = $_POST['weight_per_metre'];
+
+    // Insert data into the database
+    $stmt = $conn->prepare("INSERT INTO inventorys (product_description, stock_code, product, unit_of_measure, metres, weight_per_metre) VALUES (?, ?, ?, ?, ?, ?)");
+    $stmt->bind_param("ssssss", $product_description, $stock_code, $product, $unit_of_measure, $metres, $weight_per_metre);
+
+    if ($stmt->execute()) {
+        echo "Success";
+    } else {
+        echo "Failed: " . $stmt->error; // Show error if insert fails
+    }
+
+    $stmt->close();
+}
+
+// Fetch registered drivers
+$result = $conn->query("SELECT * FROM inventorys");
+if ($result) {
+    $inventorys = $result->fetch_all(MYSQLI_ASSOC);
+}
+$conn->close();
+?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -50,10 +85,10 @@
             </button>
           </div>
           <div class="modal-body">
-            <form method="POST" action="add_product.php" id="addProductForm"> <!-- Update action to PHP file -->
+            <form method="POST" action="inventory.php" >
               <div class="form-group">
-                <label for="description">Description</label>
-                <input type="text" class="form-control" id="description" name="description" required>
+                <label for="product_description">Description</label>
+                <input type="text" class="form-control" id="product_description" name="product_description" required>
               </div>
               <div class="form-group">
                 <label for="stock_code">Stock Code</label>
@@ -93,22 +128,47 @@
       </div>
     </div>
 
-    <!-- Product Table -->
-    <table class="table mt-3" id="productTable">
-      <thead class="thead-light">
-        <tr>
-          <th>#</th>
-          <th>Description</th>
-          <th>Stock Code</th>
-          <th>Product</th>
-          <th>Unit of Measure</th>
-          <th>Metres</th>
-          <th>Weight/Metre</th>
-        </tr>
-      </thead>
-      <tbody></tbody>
+    <div class="mt-4">
+    <h3>Registered Products</h3>
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th scope="col">#</th>
+                <th scope="col">DESCRIPTION</th>
+                <th scope="col">STOCK CODE</th>
+                <th scope="col">PRODUCT</th>
+                <th scope="col">UNIT OF MEASURE</th>
+                <th scope="col">METRES</th>
+                <th scope="col">WEIGHT / METRES</th>
+                <th scope="col">ACTIONS</th>
+            </tr>
+        </thead>
+        <tbody>
+            <?php if (!empty($inventorys)): ?>
+                <?php foreach ($inventorys as $index => $inventory): ?>
+                    <tr>
+                        <th scope="row"><?= $index + 1 ?></th>
+                        <td><?= htmlspecialchars($inventory['product_description']) ?></td>
+                        <td><?= htmlspecialchars($inventory['stock_code']) ?></td>
+                        <td><?= htmlspecialchars($inventory['product']) ?></td>
+                        <td><?= htmlspecialchars($inventory['unit_of_measure']) ?></td>
+                        <td><?= htmlspecialchars($inventory['metres']) ?></td>
+                        <td><?= htmlspecialchars($inventory['weight_per_metre']) ?></td>
+                        <td>
+                            <a href="update_inventory.php?id=<?= $inventory['id'] ?>" class="btn btn-warning btn-sm">Update</a>
+                            <a href="delete_inventory.php?id=<?= $inventory['id'] ?>" class="btn btn-danger btn-sm">Delete</a>
+                        </td>
+                    </tr>
+                <?php endforeach; ?>
+            <?php else: ?>
+                <tr>
+                    <td colspan="8" class="text-center">No Products Added yet.</td>
+                </tr>
+            <?php endif; ?>
+        </tbody>
     </table>
-  </div>
+</div>
+
 
   
 </body>
