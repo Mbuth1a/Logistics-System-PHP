@@ -1,3 +1,43 @@
+<?php
+// Include database connection
+include 'connection.php';
+
+// Initialize variables to hold counts
+$totalDrivers = 0;
+$totalVehicles = 0;
+$totalCoDrivers = 0;
+$totalInventory = 0;
+
+// Fetch total number of drivers
+$resultDrivers = $conn->query("SELECT COUNT(*) as total FROM drivers");
+if ($resultDrivers) {
+    $row = $resultDrivers->fetch_assoc();
+    $totalDrivers = $row['total'];
+}
+
+// Fetch total number of vehicles
+$resultVehicles = $conn->query("SELECT COUNT(*) as total FROM vehicles");
+if ($resultVehicles) {
+    $row = $resultVehicles->fetch_assoc();
+    $totalVehicles = $row['total'];
+}
+
+// Fetch total number of co-drivers
+$resultCoDrivers = $conn->query("SELECT COUNT(*) as total FROM co_drivers");
+if ($resultCoDrivers) {
+    $row = $resultCoDrivers->fetch_assoc();
+    $totalCoDrivers = $row['total'];
+}
+
+// Fetch total number of inventory items
+$resultInventory = $conn->query("SELECT COUNT(*) as total FROM inventorys");
+if ($resultInventory) {
+    $row = $resultInventory->fetch_assoc();
+    $totalInventory = $row['total'];
+}
+
+$conn->close();
+?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -77,7 +117,7 @@
             <div class="card bg-primary text-white shadow">
                 <div class="card-body">
                     <i class="fas fa-user"></i> Drivers
-                    <div class="text-white-50 fa-th-large">Total: </div>
+                    <div class="text-white-50 fa-th-large">Total:<?php echo $totalDrivers; ?> </div>
                 </div>
             </div>
         </div>
@@ -85,7 +125,7 @@
             <div class="card bg-success text-white shadow">
                 <div class="card-body">
                     <i class="fas fa-car"></i> Vehicles
-                    <div class="text-white-50 fa-buy-n-large">Total: </div>
+                    <div class="text-white-50 fa-buy-n-large">Total:<?php echo $totalVehicles; ?> </div>
                 </div>
             </div>
         </div>
@@ -93,7 +133,7 @@
             <div class="card bg-warning text-white shadow">
                 <div class="card-body">
                     <i class="fas fa-users"></i> Co-Drivers
-                    <div class="text-white-50 fa-users">Total: </div>
+                    <div class="text-white-50 fa-users">Total: <?php echo $totalCoDrivers; ?></div>
                 </div>
             </div>
         </div>
@@ -101,20 +141,13 @@
             <div class="card bg-info text-white shadow">
                 <div class="card-body">
                     <i class="fas fa-store"></i> Inventory
-                    <div class="text-white-50 fa-th-large">Total:</div>
+                    <div class="text-white-50 fa-th-large">Total:  <?php echo $totalInventory; ?></div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Add the canvas element for the bar chart -->
-    <div class="row mt-4">
-        <div class="col-12">
-            <div class="chart-container">
-                <canvas id="myBarChart"></canvas>
-            </div>
-        </div>
-    </div>
+    
   </div>
 
   <!-- Include the external JavaScript file -->

@@ -185,35 +185,37 @@
 
   <div class="modal fade" id="endTripModal" tabindex="-1" role="dialog" aria-labelledby="endTripModalLabel" aria-hidden="true">
     <div class="modal-dialog" role="document">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h5 class="modal-title" id="endTripModalLabel">End Trip</h5>
-          <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-            <span aria-hidden="true">&times;</span>
-          </button>
-        </div>
-        <div class="modal-body">
-          <form id="end-trip-form">
-            <div class="form-group">
-              <label for="end-odometer">Enter End Odometer Reading</label>
-              <input type="number" class="form-control" id="end-odometer" name="end_odometer" required>
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="endTripModalLabel">End Trip</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
             </div>
-            <input type="hidden" id="trip-id" name="trip_id">
-          </form>
+            <div class="modal-body">
+                <form id="end-trip-form" action="end_trip.php" method="POST">
+                    <div class="form-group">
+                        <label for="end-odometer">Enter End Odometer Reading</label>
+                        <input type="number" class="form-control" id="end-odometer" name="end_odometer" required>
+                    </div>
+                    <input type="hidden" id="trip-id" name="trip_id">
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                <button type="submit" class="btn btn-primary" form="end-trip-form">End Trip</button>
+            </div>
         </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
-          <button type="button" class="btn btn-primary" id="submit-end-trip">End Trip</button>
-        </div>
-      </div>
     </div>
   </div>
+
 
   <div class="container">
     <h2 class="alert-heading position-sticky">Ongoing Trips</h2>
     <table class="table table-dark">
       <thead>
         <tr>
+          <th>#</th>
           <th>Vehicle</th>
           <th>Driver</th>
           <th>Co-driver</th>
@@ -232,26 +234,8 @@
       </thead>
       <tbody>
         <!-- List on going trips-->
-        <tr>
-          <td></td>
-          <td></td>
-          <td></td>
-          <td></td>
-          <td></td>
-          <td></td>
-          <td></td>
-          <td></td>
-          <td></td>
-          <td></td>
-          <td> Km</td>
-          <td> Km</td>
-          <td></td>
-          <td>
-            <button class="btn btn-danger delete-trip-btn" data-trip-id="">Delete</button>
-            <button class="btn btn-danger end-trip-btn" data-trip-id="">End Trip</button>
-          </td>
-        </tr>
         
+        <?php include 'ongoingtrips.php'; ?> 
       </tbody>
     </table>
 
@@ -297,101 +281,45 @@
   
   <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.1/dist/umd/popper.min.js"></script>
   <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+  
+  
   <script>
-    document.addEventListener('DOMContentLoaded', function () {
-        const redCards = document.querySelectorAll('.card-red');
-        if (redCards.length > 0) {
-            const notification = document.getElementById('notification');
-            notification.style.display = 'block';
-            setTimeout(() => {
-                notification.style.display = 'none';
-            }, 5000);
-        }
-    });
-
-    document.getElementById('trips-link').addEventListener('click', function() {
-      var submenu = document.getElementById('trips-submenu');
-      var plusIcon = document.getElementById('trips-plus');
-      submenu.style.display = (submenu.style.display === 'block') ? 'none' : 'block';
-      plusIcon.style.transform = (submenu.style.display === 'block') ? 'rotate(60deg)' : 'rotate(0deg)';
-    });
-
-    document.getElementById('maintenance-link').addEventListener('click', function() {
-      var submenu = document.getElementById('maintenance-submenu');
-      var plusIcon = document.getElementById('maintenance-plus');
-      submenu.style.display = (submenu.style.display === 'block') ? 'none' : 'block';
-      plusIcon.style.transform = (submenu.style.display === 'block') ? 'rotate(60deg)' : 'rotate(0deg)';
-    });
-
-    document.querySelectorAll('.delete-trip-btn').forEach(function(button) {
-      button.addEventListener('click', function() {
-        const tripId = this.dataset.tripId;
-        if (confirm('Are you sure you want to delete this trip? This action is irreversible.')) {
-          fetch(`/delete-trip.php`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'X-CSRFToken': ''  // Use a proper PHP function for CSRF token if needed
-            },
-            body: JSON.stringify({ trip_id: tripId })
-          })
-          .then(response => response.json())
-          .then(data => {
-            if (data.success) {
-              alert('Trip deleted successfully.');
-              window.location.reload();
-            } else {
-              alert('Failed to delete the trip: ' + data.error);
-            }
-          })
-          .catch(error => console.error('Error:', error));
-        }
-      });
-    });
-
-    function logoutUser() {
-      window.location.href = "logout.php";  // Replace with the correct logout URL in your PHP app
-    }
-    
-    // Handle trip end modal submission
-    document.querySelectorAll('.end-trip-btn').forEach(function(button) {
-      button.addEventListener('click', function() {
-        const tripId = this.dataset.tripId;
-        document.getElementById('trip-id').value = tripId;
+    function openEndTripModal(tripId, startOdometer) {
+        $('#trip-id').val(tripId);
+        $('#end-odometer').val(startOdometer); // Optional: pre-fill with the starting odometer
         $('#endTripModal').modal('show');
-      });
+    }
+
+    $(document).ready(function() {
+        $('#submit-end-trip').click(function() {
+            var endOdometer = $('#end-odometer').val();
+            var tripId = $('#trip-id').val();
+
+            $.ajax({
+                url: 'end_trip.php',
+                type: 'POST',
+                data: {
+                    end_odometer: endOdometer,
+                    trip_id: tripId
+                },
+                success: function(response) {
+                    var res = JSON.parse(response);
+                    if (res.success) {
+                        // Update the table or refresh the page
+                        $('#endTripModal').modal('hide');
+                        location.reload(); // Reload the page to see updated tables
+                    } else {
+                        alert('Error ending trip: ' + res.error);
+                    }
+                },
+                error: function() {
+                    alert('An error occurred. Please try again.');
+                }
+            });
+        });
     });
+</script>
 
-    document.getElementById('submit-end-trip').addEventListener('click', function() {
-      const endOdometer = document.getElementById('end-odometer').value;
-      const tripId = document.getElementById('trip-id').value;
-
-      if (!endOdometer || isNaN(endOdometer)) {
-        alert('Please enter a valid End Odometer value.');
-        return;
-      }
-
-      if (confirm('Are you sure you want to end this trip?')) {
-        fetch(`/end-trip.php`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'X-CSRFToken': ''  // Replace with a proper CSRF token method for PHP
-          },
-          body: JSON.stringify({ end_odometer: endOdometer, trip_id: tripId })
-        })
-        .then(response => response.json())
-        .then(data => {
-          if (data.success) {
-            alert('Trip ended successfully.');
-            window.location.reload();
-          } else {
-            alert('Failed to end the trip: ' + data.error);
-          }
-        })
-        .catch(error => console.error('Error:', error));
-      }
-    });
-  </script>
+    
 </body>
 </html>

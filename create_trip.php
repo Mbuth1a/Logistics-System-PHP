@@ -1,3 +1,49 @@
+<?php
+include 'connection.php';
+
+// Check connection
+if ($conn->connect_error) {
+    die("Connection failed: " . $conn->connect_error);
+}
+
+// Fetch drivers, co-drivers, and vehicles for dropdowns
+$drivers_sql = "SELECT id, full_name FROM drivers";
+$drivers_result = $conn->query($drivers_sql);
+
+$co_drivers_sql = "SELECT id, full_name FROM co_drivers";
+$co_drivers_result = $conn->query($co_drivers_sql);
+
+$vehicles_sql = "SELECT id, vehicle_regno FROM vehicles";
+$vehicles_result = $conn->query($vehicles_sql);
+
+// Handle form submission
+if ($_SERVER["REQUEST_METHOD"] == "POST") {
+    $trip_date = $_POST['date'];
+    $trip_time = $_POST['time'];
+    $trip_description = $_POST['description'];
+    $driver_id = $_POST['driver'];
+    $co_driver_id = $_POST['co_driver'];
+    $vehicle_id = $_POST['vehicle'];
+    $from_location = $_POST['from_location'];
+    $stops = $_POST['stops'];
+    $to_location = $_POST['to_location'];
+    $est_distance = $_POST['est_distance'];
+    $start_odometer = $_POST['start_odometer'];
+    
+    // No end_odometer in the query, we'll update it when the trip ends
+    $sql = "INSERT INTO trips (trip_date, trip_time, trip_description, driver_id, co_driver_id, vehicle_id, from_location, stops, to_location, est_distance, start_odometer)
+            VALUES ('$trip_date', '$trip_time', '$trip_description', '$driver_id', '$co_driver_id', '$vehicle_id', '$from_location', '$stops', '$to_location', '$est_distance', '$start_odometer')";
+
+    if ($conn->query($sql) === TRUE) {
+        echo "Trip created successfully!";
+    } else {
+        echo "Error: " . $sql . "<br>" . $conn->error;
+    }
+}
+
+$conn->close();
+?>
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -22,8 +68,8 @@
 </head>
 <body>
 
-    <div class="sidebar">
-        <a href="#" class="back-button" onclick="goToDashboard()">Back</a>
+<div class="sidebar">
+        <a href="dtms_dashboard.php"><i class="fas fa-arrow-left"></i> Back to Dashboard</a>
     </div>
     <div class="main-content">
         
@@ -36,7 +82,7 @@
                     <div class="col-md-6">
                         <div class="form-group">
                             <label for="date"><i class="fas fa-calendar-alt"></i> Date</label>
-                            <input type="date" class="form-control" id="date" name="date" required>
+                            <input type="date" class="form-control" id="date" name="date" required onchange="populateDay()">
                         </div>
                     </div>
                     <div class="col-md-6">
@@ -57,6 +103,9 @@
                             <select class="form-control" id="description" name="description" required>
                                 <option value="" disabled selected>Select Description</option>
                                     <!-- Description choices from Database-->
+                                    <option value="Sales Trip">Sales Trip</option>
+                                    <option value="Pick Up">Pick Up</option>
+                                    <option value="Delivery">Delivery</option>
                             </select>
                         </div>
                     </div>
@@ -68,7 +117,13 @@
                         <div class="form-group">
                             <label for="driver"><i class="fas fa-user"></i> Driver</label>
                             <select class="form-control" id="driver" name="driver" required>
-                            <!-- Display List of drivers from the  Database-->
+                                <?php
+                                if ($drivers_result->num_rows > 0) {
+                                    while($row = $drivers_result->fetch_assoc()) {
+                                        echo "<option value='" . $row['id'] . "'>" . $row['full_name'] . "</option>";
+                                    }
+                                }
+                                ?>
                             </select>
                         </div>
                     </div>
@@ -77,7 +132,13 @@
                         <div class="form-group">
                             <label for="co_driver"><i class="fas fa-user-friends"></i> Co-Driver</label>
                             <select class="form-control" id="co_driver" name="co_driver">
-                                <!-- Display List of Co-drivers from the  Database-->
+                                <?php
+                                if ($co_drivers_result->num_rows > 0) {
+                                    while($row = $co_drivers_result->fetch_assoc()) {
+                                        echo "<option value='" . $row['id'] . "'>" . $row['full_name'] . "</option>";
+                                    }
+                                }
+                                ?>
                             </select>
                         </div>
                     </div>
@@ -86,7 +147,13 @@
                         <div class="form-group">
                             <label for="vehicle"><i class="fas fa-truck"></i> Vehicle</label>
                             <select class="form-control" id="vehicle" name="vehicle" required>
-                                <!-- Dynamically populated -->
+                                <?php
+                                if ($vehicles_result->num_rows > 0) {
+                                    while($row = $vehicles_result->fetch_assoc()) {
+                                        echo "<option value='" . $row['id'] . "'>" . $row['vehicle_regno'] . "</option>";
+                                    }
+                                }
+                                ?>
                             </select>
                         </div>
                     </div>
@@ -131,51 +198,22 @@
             <div id="distance" class="text-center mt-3 text-grey"></div>
         </div>
     </div>
-
     <script>
-        function goToDashboard() {
-            window.location.href = "dtms_dashboard.php";  // Redirect to PHP dashboard
+        // JavaScript function to populate the day field based on the selected date
+        function populateDay() {
+            var dateInput = document.getElementById('date').value;
+            var dayInput = document.getElementById('day');
+            
+            if (dateInput) {
+                var date = new Date(dateInput);
+                var options = { weekday: 'long' }; // Display day in full format
+                var day = new Intl.DateTimeFormat('en-US', options).format(date);
+                dayInput.value = day;
+            } else {
+                dayInput.value = ''; // Clear the day field if no date is selected
+            }
         }
-
-        document.addEventListener('DOMContentLoaded', function() {
-            document.getElementById('date').addEventListener('change', function() {
-                var date = new Date(this.value);
-                var options = { weekday: 'long' };
-                var dayName = date.toLocaleDateString('en-US', options);
-                document.getElementById('day').value = dayName;
-            });
-
-            // Function to update select options dynamically (AJAX)
-            function updateAvailableOptions() {
-                fetch("trip_data.php")  // Fetch available resources from the PHP backend
-                    .then(response => response.json())
-                    .then(data => {
-                        updateSelectOptions('#driver', data.drivers);
-                        updateSelectOptions('#co_driver', data.co_drivers);
-                        updateSelectOptions('#vehicle', data.vehicles);
-                    })
-                    .catch(error => console.error('Error fetching available trip data:', error));
-            }
-
-            function updateSelectOptions(selector, options) {
-                const selectElement = document.querySelector(selector);
-                selectElement.innerHTML = '';  // Clear existing options
-                
-                let placeholderOption = document.createElement('option');
-                placeholderOption.value = '';
-                placeholderOption.textContent = 'Select an option';
-                selectElement.appendChild(placeholderOption);
-                
-                options.forEach(option => {
-                    let opt = document.createElement('option');
-                    opt.value = option.id;
-                    opt.textContent = option.name;
-                    selectElement.appendChild(opt);
-                });
-            }
-
-            updateAvailableOptions();  // Call function to update options initially
-        });
     </script>
+    
 </body>
 </html>

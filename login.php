@@ -9,7 +9,7 @@
             margin: 0;
             padding: 0;
             height: 100vh;
-            background: url('/media/fint1.png') no-repeat center center;
+            background: url('media/fint1.png') no-repeat center center;
             background-size: cover;
             background-attachment: fixed;
             display: flex;
