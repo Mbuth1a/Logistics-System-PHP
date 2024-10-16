@@ -1,51 +1,31 @@
 <?php
-// end_trip.php
+include 'connection.php';  // Include the database connection file
 
-// Include your database connection file
-include 'connection.php'; // Ensure this is correct
-
-// Check if the connection was successful
-if ($conn->connect_error) {
-    die(json_encode(['success' => false, 'error' => 'Database connection failed: ' . $conn->connect_error]));
-}
-
-if ($_SERVER['REQUEST_METHOD'] == 'POST') {
-    // Get the POST data
-    $endOdometer = $_POST['end_odometer'];
+// Check if the required data has been received
+if (isset($_POST['trip_id']) && isset($_POST['end_odometer'])) {
+    // Retrieve the data from the AJAX request
     $tripId = $_POST['trip_id'];
+    $endOdometer = $_POST['end_odometer'];
 
-    // Validate input
-    if (empty($endOdometer) || empty($tripId)) {
-        echo json_encode(['success' => false, 'error' => 'Odometer and trip ID are required.']);
-        exit;
-    }
+    // Update the trip in the database to mark it as ended
+    $query = "UPDATE trips 
+              SET trip_status = 'Ended', 
+                  end_odometer = ? 
+              WHERE trip_id = ?";
 
-    // Ensure that endOdometer is numeric
-    if (!is_numeric($endOdometer)) {
-        echo json_encode(['success' => false, 'error' => 'End odometer must be a number.']);
-        exit;
-    }
+    $stmt = $conn->prepare($query);
+    $stmt->bind_param('ii', $endOdometer, $tripId);
 
-    // Update the trip status and end odometer in the database
-    $sql = "UPDATE trips SET end_odometer = ?, status = 'Completed' WHERE id = ?";
-    if ($stmt = $conn->prepare($sql)) {
-        $stmt->bind_param("ii", $endOdometer, $tripId); // Assuming both are integers
-        if ($stmt->execute()) {
-            if ($stmt->affected_rows > 0) {
-                echo json_encode(['success' => true]);
-            } else {
-                echo json_encode(['success' => false, 'error' => 'No trip found with the given ID or no changes made.']);
-            }
-        } else {
-            echo json_encode(['success' => false, 'error' => 'Failed to update trip: ' . $stmt->error]);
-        }
-        $stmt->close();
+    // Execute the query and check for success
+    if ($stmt->execute()) {
+        echo json_encode(['status' => 'success']);
     } else {
-        echo json_encode(['success' => false, 'error' => 'Failed to prepare statement: ' . $conn->error]);
+        echo json_encode(['status' => 'error', 'message' => $conn->error]);
     }
-} else {
-    echo json_encode(['success' => false, 'error' => 'Invalid request method.']);
-}
 
-// Close the database connection
-$conn->close();
+    // Close the statement and connection
+    $stmt->close();
+    $conn->close();
+} else {
+    echo json_encode(['status' => 'error', 'message' => 'Invalid data provided']);
+}

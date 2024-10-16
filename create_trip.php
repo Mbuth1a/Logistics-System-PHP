@@ -19,6 +19,7 @@ $vehicles_result = $conn->query($vehicles_sql);
 // Handle form submission
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $trip_date = $_POST['date'];
+    $trip_day = $_POST['day'];
     $trip_time = $_POST['time'];
     $trip_description = $_POST['description'];
     $driver_id = $_POST['driver'];
@@ -31,8 +32,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $start_odometer = $_POST['start_odometer'];
     
     // No end_odometer in the query, we'll update it when the trip ends
-    $sql = "INSERT INTO trips (trip_date, trip_time, trip_description, driver_id, co_driver_id, vehicle_id, from_location, stops, to_location, est_distance, start_odometer)
-            VALUES ('$trip_date', '$trip_time', '$trip_description', '$driver_id', '$co_driver_id', '$vehicle_id', '$from_location', '$stops', '$to_location', '$est_distance', '$start_odometer')";
+    $sql = "INSERT INTO trips (trip_date,trip_day , trip_time, trip_description, driver_id, co_driver_id, vehicle_id, from_location, stops, to_location, est_distance, start_odometer)
+            VALUES ('$trip_date', '$trip_day', '$trip_time', '$trip_description', '$driver_id', '$co_driver_id', '$vehicle_id', '$from_location', '$stops', '$to_location', '$est_distance', '$start_odometer')";
 
     if ($conn->query($sql) === TRUE) {
         echo "Trip created successfully!";

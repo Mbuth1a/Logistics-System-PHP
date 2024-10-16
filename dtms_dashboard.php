@@ -193,7 +193,7 @@
                 </button>
             </div>
             <div class="modal-body">
-                <form id="end-trip-form" action="end_trip.php" method="POST">
+                <form id="end-trip-form">
                     <div class="form-group">
                         <label for="end-odometer">Enter End Odometer Reading</label>
                         <input type="number" class="form-control" id="end-odometer" name="end_odometer" required>
@@ -203,11 +203,12 @@
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
-                <button type="submit" class="btn btn-primary" form="end-trip-form">End Trip</button>
+                <button type="button" id="submit-end-trip" class="btn btn-primary">End Trip</button>
             </div>
         </div>
     </div>
   </div>
+
 
 
   <div class="container">
@@ -258,10 +259,11 @@
           <th>End Odometer</th>
           <th>Actual Distance</th>
           <th>Status</th>
-          <th>Time Ended</th>
+         
         </tr>
       </thead>
       <tbody>
+      <?php include 'ended_trips.php'; ?> 
        <!-- List ended trips-->
       </tbody>
     </table>
@@ -277,49 +279,50 @@
   <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.2/dist/umd/popper.min.js"></script>
   <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
-  <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+  <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+
   
   <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.1/dist/umd/popper.min.js"></script>
   <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
-  
-  
   <script>
-    function openEndTripModal(tripId, startOdometer) {
+    // Event listener for opening the modal and setting the trip ID
+    $(document).on('click', '[data-target="#endTripModal"]', function () {
+        // Get the trip ID from the button's data attribute
+        var tripId = $(this).data('trip-id');
+        // Set the trip ID in the hidden input field in the modal
         $('#trip-id').val(tripId);
-        $('#end-odometer').val(startOdometer); // Optional: pre-fill with the starting odometer
-        $('#endTripModal').modal('show');
-    }
+    });
 
-    $(document).ready(function() {
-        $('#submit-end-trip').click(function() {
-            var endOdometer = $('#end-odometer').val();
-            var tripId = $('#trip-id').val();
+    // Event listener for the End Trip form submission
+    $('#submit-end-trip').on('click', function () {
+        // Get the values from the form
+        var tripId = $('#trip-id').val();
+        var endOdometer = $('#end-odometer').val();
 
-            $.ajax({
-                url: 'end_trip.php',
-                type: 'POST',
-                data: {
-                    end_odometer: endOdometer,
-                    trip_id: tripId
-                },
-                success: function(response) {
-                    var res = JSON.parse(response);
-                    if (res.success) {
-                        // Update the table or refresh the page
-                        $('#endTripModal').modal('hide');
-                        location.reload(); // Reload the page to see updated tables
-                    } else {
-                        alert('Error ending trip: ' + res.error);
-                    }
-                },
-                error: function() {
-                    alert('An error occurred. Please try again.');
+        // Perform an AJAX request to send data to the PHP file for processing
+        $.ajax({
+            url: 'end_trip.php', // The PHP file that will handle the request
+            type: 'POST',
+            data: {
+                trip_id: tripId,
+                end_odometer: endOdometer
+            },
+            success: function (response) {
+                var jsonResponse = JSON.parse(response);
+                if (jsonResponse.status === 'success') {
+                    alert('Trip ended successfully!');
+                    location.reload(); // Reload the page to refresh the ongoing trips table
+                } else {
+                    alert('Error: ' + jsonResponse.message);
                 }
-            });
+            },
+            error: function () {
+                // Handle error - display an error message to the user
+                alert('An error occurred while ending the trip. Please try again.');
+            }
         });
     });
 </script>
 
-    
 </body>
 </html>

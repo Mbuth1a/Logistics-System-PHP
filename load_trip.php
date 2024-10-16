@@ -1,3 +1,114 @@
+<?php
+// load_trip.php
+
+// Include the database connection file
+include 'connection.php';
+
+// Initialize variables for error and success messages
+$errorMsg = '';
+$successMsg = '';
+
+// Fetch trips from the database
+$tripOptions = '';
+$sql = "SELECT 
+            trips.trip_id, 
+            trips.trip_day, 
+            trips.trip_time, 
+            drivers.full_name AS driver_full_name, 
+            co_drivers.full_name AS co_driver_full_name, 
+            vehicles.vehicle_regno AS vehicle_regno, 
+            trips.from_location, 
+            trips.stops, 
+            trips.to_location
+        FROM trips
+        LEFT JOIN drivers ON trips.driver_id = drivers.id
+        LEFT JOIN co_drivers ON trips.co_driver_id = co_drivers.id
+        LEFT JOIN vehicles ON trips.vehicle_id = vehicles.id";
+
+$result = $conn->query($sql);
+
+if ($result->num_rows > 0) {
+    while ($row = $result->fetch_assoc()) {
+        $tripDisplay =  $row['trip_day'] . ', ' . 
+                        $row['trip_time'] . ', ' . 
+                        $row['driver_full_name'] . ', ' . 
+                        $row['co_driver_full_name'] . ', ' . 
+                        $row['vehicle_regno'] . ', ' . 
+                        $row['from_location'] . ', ' . 
+                        $row['stops'] . ', ' . 
+                        $row['to_location'];
+
+        $tripOptions .= '<option value="' . $row['trip_id'] . '">' . $tripDisplay . '</option>';
+    }
+} else {
+    $tripOptions = '<option value="" disabled>No trips available</option>';
+}
+
+// Fetch products from the database
+$productOptions = '';
+$sql = "SELECT 
+            inventorys.id,    
+            inventorys.product_description, 
+            inventorys.stock_code, 
+            inventorys.product, 
+            inventorys.unit_of_measure, 
+            inventorys.metres, 
+            inventorys.weight_per_metre
+        FROM inventorys";
+$result = $conn->query($sql);
+
+if ($result->num_rows > 0) {
+    while ($row = $result->fetch_assoc()) {
+        $productDisplay =  $row['product_description'] . ', ' . 
+                          $row['stock_code'] . ', ' .  
+                          $row['product'] . ', ' . 
+                          $row['unit_of_measure'] . ', ' . 
+                          $row['metres'] . ', ' . 
+                          $row['weight_per_metre'];
+        
+        $productOptions .= '<option value="' . $row['id'] . '" data-metres="' . $row['metres'] . '" data-weight-per-metre="' . $row['weight_per_metre'] . '">' . $productDisplay . '</option>';
+    }
+} else {
+    $productOptions = '<option value="" disabled>No products available</option>';
+}
+
+// Check if form is submitted
+if ($_SERVER['REQUEST_METHOD'] == 'POST') {
+    // Fetch trip ID and total weight from the form
+    $trip_id = $_POST['trip_id'];
+    $total_weight = $_POST['total_weight_of_products'];
+    $products = json_decode($_POST['products_data'], true); // Decode the JSON data
+
+    if ($trip_id && $total_weight && count($products) > 0) {
+        // Insert trip load into the database
+        $insertTripLoad = $conn->prepare("INSERT INTO load_trip (trip_id, total_weight) VALUES (?, ?)");
+        $insertTripLoad->bind_param("id", $trip_id, $total_weight);
+
+        if ($insertTripLoad->execute()) {
+            $tripLoadId = $insertTripLoad->insert_id; // Get the ID of the newly inserted trip load
+
+            // Insert each product associated with the trip
+            $insertProduct = $conn->prepare("INSERT INTO load_trip_products (load_trip_id, product_description, quantity, total_weight) VALUES (?, ?, ?, ?)");
+            foreach ($products as $product) {
+                $insertProduct->bind_param("iiid", $tripLoadId, $product['id'], $product['quantity'], $product['total_weight']);
+                $insertProduct->execute();
+            }
+            $successMsg = 'Trip loaded successfully with all selected products.';
+            $insertProduct->close();
+        } else {
+            $errorMsg = 'Error: Unable to load the trip. Please try again.';
+        }
+        $insertTripLoad->close();
+    } else {
+        $errorMsg = 'Please select a trip and add at least one product before submitting.';
+    }
+}
+
+// Close the connection
+$conn->close();
+?>
+
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -6,76 +117,38 @@
     <title>Load Trip</title>
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
-    <style>
-        .text-orange { color: orange; }
-        .bg-orange { background-color: orange; }
-        .form-group { padding: 10px; border: 1px solid #ddd; border-radius: 5px; margin-bottom: 15px; }
-        .sidebar { position: fixed; top: 0; left: 0; width: 220px; height: 100%; background-color: #343a40; padding-top: 20px; }
-        .sidebar a { color: #fff; padding: 15px; text-decoration: none; display: block; }
-        .sidebar a:hover { background-color: #ff8c00; }
-        .main-content { margin-left: 220px; padding: 20px; }
-        .back-button { display: inline-block; padding: 10px 15px; background-color: #343a40; color: #fff; border: none; cursor: pointer; }
-        .back-button:hover { background-color: #ff8c00; }
-        .form-control { background-color: #f9f9f9; color: #333; }
-        .search-button:hover { background-color: #ff8c00; }
-        .btn-end-trip {
-            background-color: #007bff;
-            color: white;
-            border: none;
-            padding: 5px 10px;
-            cursor: pointer;
-        }
-        .btn-end-trip:hover {
-            background-color: orange;
-        }
-        .table-container {
-            margin-top: 20px;
-        }
-        .table {
-            width: 100%; /* Make table full width */
-        }
-        @media (max-width: 992px) {
-            .sidebar { width: 200px; }
-            .main-content { margin-left: 200px; }
-        }
-        @media (max-width: 768px) {
-            .sidebar { width: 100%; height: auto; position: relative; }
-            .main-content { margin-left: 0; }
-        }
-    </style>
+    <link rel="stylesheet" href="css/load_trip.css">
 </head>
 <body>
     <div class="sidebar">
-        <a href="#" class="back-button" onclick="goToDashboard()">Back</a>
+        <a href="dtms_dashboard.php"><i class="fas fa-arrow-left"></i> Back to Dashboard</a>
     </div>
     <div class="container-fluid main-content col-md-10">
         <h2 class="text-center text-orange"><i class="fas fa-box"></i> Load Trip</h2>
         
-        <!-- Form to Load Trip -->
         <form id="loadTripForm" method="post" action="load_trip.php">
             <input type="hidden" name="csrf_token" value="">
             <div class="form-group">
                 <label for="id_trip"><i class="fas fa-cube"></i> Trip</label>
-                <select id="id_trip" name="trip" class="form-control" onchange="tripSelected()">
+                <select id="id_trip" name="trip_id" class="form-control" onchange="tripSelected()">
                     <option value="" disabled selected>Select a trip</option>
-                    <!-- Fetch trips-->
+                    <?php echo $tripOptions; ?>
                 </select>
             </div>
-            
-            <!-- Product Section -->
+
             <div id="product-section" style="display: none;">
                 <h3 class="text-center text-orange">Add Products</h3>
                 <div class="form-group">
                     <label for="product_search"><i class="fas fa-search"></i> Search Product</label>
                     <div class="input-group mb-2">
-                        <input type="text" id="product_search" class="form-control" placeholder="Search Product">
+                        <input type="text" id="product_search" class="form-control" placeholder="Search Product by Stock Code" onkeyup="searchProduct()">
                         <div class="input-group-append">
                             <button class="btn btn-outline-secondary search-button" type="button" onclick="searchProduct()"><i class="fas fa-search"></i></button>
                         </div>
                     </div>
                     <select id="id_product" name="products" class="form-control" onchange="productSelected()">
-                        <option value="" disabled selected>Search by product code</option>
-                        <!-- Display Products and the search functionality -->
+                        <option value="" disabled selected>Select a product</option>
+                        <?php echo $productOptions; ?>
                     </select>
                 </div>
                 <div class="form-group">
@@ -88,133 +161,118 @@
                 </div>
                 <button type="button" class="btn btn-primary bg-orange" onclick="addProduct()">Add Product</button>
             </div>
-            
-            <div id="products-list"></div>
-            
+
+            <div id="products-list" class="mt-4"></div>
+
+            <div class="form-group">
+                <label for="total_weight_of_products"><i class="fas fa-weight-hanging"></i> Total Weight of All Products</label>
+                <input type="text" id="total_weight_of_products" name="total_weight_of_products" class="form-control" readonly>
+                <input type="hidden" id="products_data" name="products_data">
+            </div>
+
             <button type="submit" class="btn btn-primary bg-orange btn-block mt-4"><i class="fas fa-paper-plane"></i> Submit</button>
         </form>
     </div>
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            fetchTrips();
+
+<script>
+    let products = [];
+
+    function prepareProductData() {
+        document.getElementById('products_data').value = JSON.stringify(products);
+    }
+
+    let totalWeightOfProducts = 0;
+
+    function tripSelected() {
+        const tripSelect = document.getElementById('id_trip');
+        const productSection = document.getElementById('product-section');
+        
+        // Check if a trip has been selected
+        productSection.style.display = tripSelect.value ? 'block' : 'none';
+    }
+
+    function searchProduct() {
+        const input = document.getElementById('product_search').value.toLowerCase();
+        const productSelect = document.getElementById('id_product');
+        const options = productSelect.getElementsByTagName('option');
+
+        for (let i = 0; i < options.length; i++) {
+            const optionText = options[i].text.toLowerCase();
+
+            // Show or hide the option based on whether it matches the search query
+            if (optionText.includes(input)) {
+                options[i].style.display = '';
+            } else {
+                options[i].style.display = 'none';
+            }
+        }
+    }
+
+    function productSelected() {
+        calculateTotalWeight();
+    }
+
+    function calculateTotalWeight() {
+        const productSelect = document.getElementById('id_product');
+        const selectedOption = productSelect.options[productSelect.selectedIndex];
+        const quantityInput = document.getElementById('id_quantity');
+        const totalWeightInput = document.getElementById('id_total_weight');
+
+        const weightPerMetre = parseFloat(selectedOption.dataset.weightPerMetre);
+        const metres = parseFloat(selectedOption.dataset.metres);
+        const quantity = parseInt(quantityInput.value) || 0;
+
+        // Calculate total weight
+        const totalWeight = weightPerMetre * metres * quantity;
+        totalWeightInput.value = totalWeight.toFixed(2);
+    }
+
+    function addProduct() {
+        const productSelect = document.getElementById('id_product');
+        const selectedOption = productSelect.options[productSelect.selectedIndex];
+        const quantityInput = document.getElementById('id_quantity');
+        const totalWeightInput = document.getElementById('id_total_weight');
+
+        const productId = selectedOption.value;
+        const productDescription = selectedOption.text;
+        const quantity = parseInt(quantityInput.value) || 0;
+        const totalWeight = parseFloat(totalWeightInput.value) || 0;
+
+        // Check if product is already in the list
+        const existingProduct = products.find(product => product.id === productId);
+        if (existingProduct) {
+            existingProduct.quantity += quantity;
+            existingProduct.total_weight += totalWeight;
+        } else {
+            products.push({
+                id: productId,
+                description: productDescription,
+                quantity: quantity,
+                total_weight: totalWeight
+            });
+        }
+
+        totalWeightOfProducts += totalWeight;
+
+        // Update the total weight of all products input
+        document.getElementById('total_weight_of_products').value = totalWeightOfProducts.toFixed(2);
+        prepareProductData();
+
+        displayProducts();
+    }
+
+    function displayProducts() {
+        const productsList = document.getElementById('products-list');
+        productsList.innerHTML = '';
+
+        products.forEach(product => {
+            productsList.innerHTML += `
+                <div class="alert alert-info">
+                    ${product.description} - Quantity: ${product.quantity} - Total Weight: ${product.total_weight.toFixed(2)}
+                </div>
+            `;
         });
-
-        function fetchTrips() {
-            fetch('/api/load_trips.php')
-                .then(response => response.json())
-                .then(trips => {
-                    displayTrips(trips);
-                })
-                .catch(error => {
-                    console.error('Error fetching trips:', error);
-                });
-        }
-
-        function displayTrips(trips) {
-            const tripTableBody = document.getElementById('trip-table-body');
-            tripTableBody.innerHTML = '';
-
-            trips.forEach(trip => {
-                let productDetails = trip.products.length ? trip.products.map(product => `
-                    <div>
-                        <strong>${product.product_name}</strong> (Quantity: ${product.quantity}, Weight: ${product.total_weight} kg)
-                    </div>
-                `).join('') : 'No products loaded';
-
-                const tr = document.createElement('tr');
-                tr.innerHTML = `
-                    <td>${trip.vehicle}</td>
-                    <td>${trip.day}</td>
-                    <td>${trip.date}</td>
-                    <td>${trip.time}</td>
-                    <td>${trip.description}</td>
-                    <td>${trip.from_location}</td>
-                    <td>${trip.to_location}</td>
-                    <td>${trip.driver_name}</td>
-                    <td>${trip.co_driver_name}</td>
-                    <td>${trip.est_distance}</td>
-                    <td>${productDetails}</td>
-                    <td><button class="btn btn-primary btn-end-trip" onclick="endTrip(${trip.id})">End Trip</button></td>
-                `;
-                tripTableBody.appendChild(tr);
-            });
-        }
-
-        function endTrip(tripId) {
-            fetch(`/api/load_trips/${tripId}/end.php`, { method: 'POST' })
-                .then(response => response.json())
-                .then(result => {
-                    if (result.success) {
-                        fetchTrips(); // Refresh the list
-                        alert('Trip ended successfully.');
-                    } else {
-                        alert('Failed to end trip.');
-                    }
-                })
-                .catch(error => {
-                    console.error('Error ending trip:', error);
-                });
-        }
-
-        function searchProduct() {
-            const searchQuery = document.getElementById('product_search').value.toLowerCase();
-            const productSelect = document.getElementById('id_product');
-            const options = productSelect.querySelectorAll('option');
-            options.forEach(option => {
-                const text = option.textContent.toLowerCase();
-                option.style.display = text.includes(searchQuery) ? 'block' : 'none';
-            });
-        }
-
-        function productSelected() {
-            calculateTotalWeight();
-        }
-
-        function addProduct() {
-            const productSelect = document.getElementById('id_product');
-            const quantityInput = document.getElementById('id_quantity');
-            const selectedOption = productSelect.options[productSelect.selectedIndex];
-            const productId = selectedOption.value;
-            const productText = selectedOption.textContent;
-            const quantity = quantityInput.value;
-            const weightPerMetre = selectedOption.getAttribute('data-weight');
-            const metres = selectedOption.getAttribute('data-metres');
-            const totalWeight = (quantity * weightPerMetre * metres).toFixed(2);
-
-            if (productId && quantity > 0) {
-                const productSection = document.getElementById('products-list');
-                productSection.innerHTML += `<div class="form-group">
-                    <input type="hidden" name="products[]" value="${productId}">
-                    <p><strong>${productText}</strong> (Quantity: ${quantity}, Total Weight: ${totalWeight} kg)</p>
-                </div>`;
-
-                productSelect.value = '';
-                quantityInput.value = '';
-                document.getElementById('id_total_weight').value = '';
-            } else {
-                alert('Please select a product and enter a valid quantity.');
-            }
-        }
-
-        function calculateTotalWeight() {
-            const productSelect = document.getElementById('id_product');
-            const quantityInput = document.getElementById('id_quantity');
-            const selectedOption = productSelect.options[productSelect.selectedIndex];
-            const weightPerMetre = selectedOption.getAttribute('data-weight');
-            const metres = selectedOption.getAttribute('data-metres');
-            const quantity = quantityInput.value;
-
-            if (quantity && weightPerMetre && metres) {
-                const totalWeight = (quantity * weightPerMetre * metres).toFixed(2);
-                document.getElementById('id_total_weight').value = totalWeight;
-            } else {
-                document.getElementById('id_total_weight').value = '';
-            }
-        }
-
-        function goToDashboard() {
-            window.location.href = 'dtms_dashboard.php';
-        }
-    </script>
+    }
+</script>
 </body>
 </html>

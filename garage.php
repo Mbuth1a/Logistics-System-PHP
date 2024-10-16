@@ -1,3 +1,53 @@
+<?php
+// Fetch vehicles data from the database
+include 'connection.php'; // Make sure this file exists and has the correct database connection settings
+
+// Fetch all vehicles not currently in the garage
+$vehicleQuery = "SELECT id, vehicle_regno, vehicle_model, vehicle_type FROM vehicles 
+                 WHERE id NOT IN (SELECT vehicle_id FROM garage WHERE checked_out_at IS NULL) 
+                 ORDER BY vehicle_regno ASC";
+$vehicleResult = $conn->query($vehicleQuery);
+$vehicles = [];
+
+if ($vehicleResult && $vehicleResult->num_rows > 0) {
+    while ($row = $vehicleResult->fetch_assoc()) {
+        $vehicles[] = $row;
+    }
+}
+
+// Fetch vehicles that are currently in the garage
+$garageQuery = "SELECT g.vehicle_id, v.vehicle_regno, g.issue_description, g.checked_in_at 
+                FROM garage g 
+                JOIN vehicles v ON g.vehicle_id = v.id 
+                WHERE g.checked_out_at IS NULL";
+$garageResult = $conn->query($garageQuery);
+$garageVehicles = [];
+
+if ($garageResult && $garageResult->num_rows > 0) {
+    while ($row = $garageResult->fetch_assoc()) {
+        $garageVehicles[] = $row;
+    }
+}
+
+
+// Fetch vehicles that have been checked out from the garage
+$historyQuery = "SELECT g.vehicle_id, v.vehicle_regno, g.issue_description, g.checked_in_at, g.checked_out_at, g.garage_expense
+                 FROM garage g
+                 JOIN vehicles v ON g.vehicle_id = v.id
+                 WHERE g.checked_out_at IS NOT NULL
+                 ORDER BY g.checked_out_at DESC";
+$historyResult = $conn->query($historyQuery);
+$garageHistory = [];
+
+if ($historyResult && $historyResult->num_rows > 0) {
+    while ($row = $historyResult->fetch_assoc()) {
+        $garageHistory[] = $row;
+    }
+}
+
+$conn->close();
+?>
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -5,82 +55,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Garage Management</title>
     <link href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
-    <style>
-        body {
-            background-color: #343a40; /* Dark grey background for the whole page */
-            color: black; /* Black text color */
-        }
-        .sidebar .btn-back {
-            background-color:red;
-            color: white;
-            border: none;
-            position: fixed; /* Fixed position for the back button */
-            top: 15px;
-            left: 15px; /* Ensure it stays within the sidebar */
-            width: calc(100% - 30px); /* Adjust width to fit within the sidebar */
-        }
-        .sidebar .btn-back:hover {
-            background-color: orange;
-            color: black;
-        }
-        .content {
-            background-color: #495057; /* Slightly lighter grey for the content area */
-            padding: 20px;
-            border-radius: 5px;
-        }
-        .modal-content {
-            background-color: #343a40; /* Dark grey for modal content */
-            color: #ffffff; /* White text color in the modal */
-        }
-        .form-control, .btn {
-            background-color: orange; /* Orange for form controls and buttons */
-            color: whitesmoke;
-        }
-        .btn-primary:hover {
-            background-color: #0056b3;
-        }
-        .table th, .table td {
-            padding: 10px;
-            color: white;
-        }
-        .table th {
-            background-color: orange !important;
-            font-weight: bold;
-        }
-        .collapsible {
-            background-color: #777;
-            color: white;
-            cursor: pointer;
-            padding: 10px;
-            width: 100%;
-            border: none;
-            text-align: left;
-            outline: none;
-            font-size: 15px;
-            margin-top: 10px;
-        }
-        .active, .collapsible:hover {
-            background-color: #555;
-        }
-        .content-history {
-            padding: 0 10px;
-            display: none;
-            overflow: hidden;
-            background-color: #f1f1f1;
-            color: black;
-            margin-bottom: 10px;
-        }
-    </style>
+    <link rel="stylesheet" href="css/garage.css">
 </head>
 <body>
 
 <div class="container-fluid">
     <div class="row">
         <!-- Sidebar -->
-        <div class="col-md-2 sidebar">
-            <button class="btn btn-back " onclick="window.location.href='dtms_dashboard.php'">
-                <i class="fas fa-arrow-left"></i> Back to Dashboard
-            </button>
+        <div class="sidebar">
+            <a href="dtms_dashboard.php"><i class="fas fa-arrow-left"></i> Back to Dashboard</a>
         </div>
         <!-- Main Content -->
         <div class="col-md-10 content">
@@ -98,7 +81,16 @@
 
             <!-- Vehicle List -->
             <h2>Vehicles</h2>
-            <ul id="vehicle-list" class="list-group mb-4"></ul>
+            <ul id="vehicle-list" class="list-group mb-4">
+                <?php foreach ($vehicles as $vehicle): ?>
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <?php echo htmlspecialchars($vehicle['vehicle_regno']); ?> - 
+                        <?php echo htmlspecialchars($vehicle['vehicle_model']); ?> - 
+                        <?php echo htmlspecialchars($vehicle['vehicle_type']); ?>
+                        <button class="btn btn-info btn-sm" onclick="openGarageModal(<?php echo $vehicle['id']; ?>, '<?php echo htmlspecialchars($vehicle['vehicle_regno']); ?>')">Add to Garage</button>
+                    </li>
+                <?php endforeach; ?>
+            </ul>
 
             <!-- Vehicles in Garage -->
             <h2>Vehicles in Garage</h2>
@@ -111,8 +103,71 @@
                         <th>Actions</th>
                     </tr>
                 </thead>
-                <tbody id="garage-body"></tbody>
+                <tbody id="garage-body">
+                <?php foreach ($garageVehicles as $garage): ?>
+                    <tr id="garage-row-<?php echo $garage['vehicle_id']; ?>">
+                        <td><?php echo htmlspecialchars($garage['vehicle_regno']); ?></td>
+                        <td><?php echo htmlspecialchars($garage['issue_description']); ?></td>
+                        <td><?php echo htmlspecialchars($garage['checked_in_at']); ?></td>
+                        <td><button class="btn btn-success btn-sm" onclick="checkoutVehicle(<?php echo $garage['vehicle_id']; ?>)">Check Out</button></td>
+                    </tr>
+                <?php endforeach; ?>
+
+                </tbody>
             </table>
+                
+            <!-- Garage History Section -->
+            <h2>Garage History</h2>
+            <table id="garage-history-table" class="table">
+                <thead>
+                    <tr>
+                        <th>Vehicle Registration Number</th>
+                        <th>Issue Description</th>
+                        <th>Checked In At</th>
+                        <th>Checked Out At</th>
+                        <th>Garage Expense ($)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php foreach ($garageHistory as $history): ?>
+                        <tr>
+                            <td><?php echo htmlspecialchars($history['vehicle_regno']); ?></td>
+                            <td><?php echo htmlspecialchars($history['issue_description']); ?></td>
+                            <td><?php echo htmlspecialchars($history['checked_in_at']); ?></td>
+                            <td><?php echo htmlspecialchars($history['checked_out_at']); ?></td>
+                            <td><?php echo htmlspecialchars(number_format($history['garage_expense'], 2)); ?></td>
+                        </tr>
+                    <?php endforeach; ?>
+                </tbody>
+            </table>
+
+                
+            <!-- Checkout Modal -->
+            <div class="modal fade" id="checkoutModal" tabindex="-1" role="dialog">
+                <div class="modal-dialog" role="document">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title">Vehicle Checkout</h5>
+                            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                <span aria-hidden="true">&times;</span>
+                            </button>
+                        </div>
+                        <div class="modal-body">
+                            <form id="checkout-form">
+                                <input type="hidden" id="checkout-vehicle-id">
+                                <div class="form-group">
+                                    <label for="garage-expense">Garage Expense ($)</label>
+                                    <input type="number" class="form-control" id="garage-expense" step="0.01" required>
+                                </div>
+                                
+                                <button type="submit" class="btn btn-primary">Checkout</button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+
 
             <!-- Modals -->
             <div class="modal fade" id="garageModal" tabindex="-1" role="dialog">
@@ -137,216 +192,94 @@
                     </div>
                 </div>
             </div>
-
-            <!-- Garage History Section -->
-            <div class="container col-md-12">
-                <h1 class="my-4">Garage History</h1>
-                <table class="table">
-                    <thead>
-                        <tr>
-                            <th>Vehicle Registration Number</th>
-                            <th>Issue Description</th>
-                            <th>Garage Expense</th>
-                            <th>Checked In At</th>
-                            <th>Checked Out At</th>
-                        </tr>
-                    </thead>
-                    <tbody id="garage-history-body">
-                        <!-- Data will be inserted here by JavaScript -->
-                    </tbody>
-                </table>
-            </div>
-
-            <!-- Checkout Modal with Expense Field -->
-            <div class="modal fade" id="checkoutModal" tabindex="-1" role="dialog">
-                <div class="modal-dialog" role="document">
-                    <div class="modal-content">
-                        <div class="modal-header">
-                            <h5 class="modal-title">Check Out Vehicle</h5>
-                            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                                <span aria-hidden="true">&times;</span>
-                            </button>
-                        </div>
-                        <div class="modal-body">
-                            <p id="checkout-message"></p>
-                            <form id="checkout-form">
-                                <div class="form-group">
-                                    <label for="garage-expense">Garage Expense</label>
-                                    <input type="text" class="form-control" id="garage-expense" placeholder="Enter expense amount" required>
-                                </div>
-                                <button type="submit" class="btn btn-primary">Confirm Check Out</button>
-                            </form>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
         </div>
     </div>
 </div>
 
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+
 <script>
-    $(document).ready(function() {
-        let vehicles = [];
-        let garages = [];
-        let vehiclesInGarage = new Set();
+    // Function to open the Garage Modal and set the vehicle information
+function openGarageModal(vehicleId, vehicleRegNo) {
+    $('#vehicle-id').val(vehicleId); // Set the vehicle ID in the hidden input
+    $('#issue-description').val(''); // Clear the issue description field
+    $('#garageModal').modal('show'); // Show the modal
+}
 
-        // Fetch data and populate vehicles and garage lists
-        function fetchData() {
-            $.getJSON('get_vehicle_data.php', function(data) {
-                vehicles = data.vehicles;
-                garages = data.garages;
-                vehiclesInGarage = new Set(garages.filter(g => !g.checkedOutAt).map(g => g.vehicleId));
-                renderVehicleList();
-                renderGarageList();
-                renderGarageHistory(); // Populate garage history section
-            });
+// Handle form submission for adding a vehicle to the garage
+$('#garage-form').on('submit', function(event) {
+    event.preventDefault(); // Prevent the default form submission
+
+    const vehicleId = $('#vehicle-id').val();
+    const issueDescription = $('#issue-description').val();
+
+    $.ajax({
+        url: 'add_to_garage.php',
+        type: 'POST',
+        data: {
+            vehicle_id: vehicleId,
+            issue_description: issueDescription
+        },
+        success: function(response) {
+            const res = JSON.parse(response);
+            if (res.status === 'success') {
+                alert(res.message);
+                $('#garageModal').modal('hide'); // Hide the modal on success
+                // Remove the added vehicle from the vehicle list and move it to the garage list
+                $(`#vehicle-${vehicleId}`).remove();
+                refreshGarageList();
+            } else {
+                alert(res.message);
+            }
+        },
+        error: function() {
+            alert('An error occurred while adding the vehicle to the garage.');
         }
-
-        // Render available vehicles
-        function renderVehicleList() {
-            const vehicleList = $('#vehicle-list');
-            vehicleList.empty();
-            vehicles.filter(vehicle => !vehiclesInGarage.has(vehicle.id)).forEach(vehicle => {
-                vehicleList.append(`
-                    <li class="list-group-item">
-                        ${vehicle.regno} - ${vehicle.model} - ${vehicle.type}
-                        <button class="btn btn-success float-right ml-2" onclick="addToGarage(${vehicle.id})">Add to Garage</button>
-                    </li>
-                `);
-            });
-        }
-
-        // Render active garage list (vehicles currently in the garage)
-        function renderGarageList() {
-            const garageBody = $('#garage-body');
-            garageBody.empty();
-            garages.filter(g => !g.checkedOutAt).forEach(garage => {
-                const vehicle = vehicles.find(v => v.id === garage.vehicleId);
-                garageBody.append(`
-                    <tr>
-                        <td>${vehicle.regno}</td>
-                        <td>${garage.issue}</td>
-                        <td>${new Date(garage.checkedInAt).toLocaleString()}</td>
-                        <td>
-                            <button class="btn btn-danger" onclick="showCheckoutModal(${garage.id})">Check Out</button>
-                        </td>
-                    </tr>
-                `);
-            });
-        }
-
-        // Collapsible history section logic
-        $(document).on('click', '.collapsible', function() {
-            $(this).toggleClass('active');
-            $(this).next('.content-history').slideToggle();
-        });
-
-        $(document).ready(function() {
-            // Fetch and display garage history
-            $.getJSON('get_garage_history.php', function(data) {
-                const historyBody = $('#garage-history-body');
-                if (data.length > 0) {
-                    data.forEach(record => {
-                        historyBody.append(`
-                            <tr>
-                                <td>${record.vehicle__vehicle_regno}</td>
-                                <td>${record.issue_description}</td>
-                                <td>${record.garage_expense}</td>
-                                <td>${new Date(record.checked_in_at).toLocaleString()}</td>
-                                <td>${new Date(record.checked_out_at).toLocaleString()}</td>
-                            </tr>
-                        `);
-                    });
-                } else {
-                    historyBody.append('<tr><td colspan="5">No vehicles with a garage expense have been checked out yet.</td></tr>');
-                }
-            });
-        });
-
-        // Handle search form submission
-        $('#search-form').on('submit', function(event) {
-            event.preventDefault();
-            const query = $('#search-query').val().toLowerCase();
-            const filteredVehicles = vehicles.filter(vehicle => 
-                !vehiclesInGarage.has(vehicle.id) && (
-                vehicle.regno.toLowerCase().includes(query) ||
-                vehicle.model.toLowerCase().includes(query) ||
-                vehicle.type.toLowerCase().includes(query)
-            ));
-            const vehicleList = $('#vehicle-list');
-            vehicleList.empty();
-            filteredVehicles.forEach(vehicle => {
-                vehicleList.append(`
-                    <li class="list-group-item">
-                        ${vehicle.regno} - ${vehicle.model} - ${vehicle.type}
-                        <button class="btn btn-success float-right ml-2" onclick="addToGarage(${vehicle.id})">Add to Garage</button>
-                    </li>
-                `);
-            });
-        });
-
-        // Show modal to add vehicle to garage
-        window.addToGarage = function(vehicleId) {
-            $('#vehicle-id').val(vehicleId);
-            $('#garageModal').modal('show');
-        };
-
-        // Save vehicle to garage
-        $('#garage-form').on('submit', function(event) {
-            event.preventDefault();
-            const vehicleId = $('#vehicle-id').val();
-            const issueDescription = $('#issue-description').val();
-            $.post('add_to_garage.php', {
-                vehicle_id: vehicleId,
-                issue_description: issueDescription
-            }, function(response) {
-                if (response.success) {
-                    fetchData(); // Refresh data after adding to garage
-                    $('#garageModal').modal('hide');
-                } else {
-                    alert('Error adding vehicle to garage.');
-                }
-            }).fail(function() {
-                alert('Error adding vehicle to garage.');
-            });
-        });
-
-        // Show modal to check out vehicle and add garage expense
-        window.showCheckoutModal = function(garageId) {
-            const garage = garages.find(g => g.id === garageId);
-            const vehicle = vehicles.find(v => v.id === garage.vehicleId);
-            $('#checkout-message').text(`Are you sure you want to check out the vehicle ${vehicle.regno}?`);
-            $('#checkout-form').off('submit').on('submit', function(event) {
-                event.preventDefault();
-                const expense = $('#garage-expense').val();
-                checkoutVehicle(garageId, expense);
-            });
-            $('#checkoutModal').modal('show');
-        };
-
-        // Check out vehicle with expense
-        function checkoutVehicle(garageId, expense) {
-            $.post('checkout_vehicle.php', {
-                garage_id: garageId,
-                garage_expense: expense
-            }, function(response) {
-                if (response.success) {
-                    fetchData(); // Refresh the data to reflect the updated status
-                    $('#checkoutModal').modal('hide');
-                } else {
-                    alert('Error checking out vehicle.');
-                }
-            }).fail(function() {
-                alert('Error checking out vehicle.');
-            });
-        }
-
-        // Initial data fetch
-        fetchData();
     });
+});
+
+// Function to open the Checkout Modal with the vehicle information
+function checkoutVehicle(vehicleId) {
+    $('#checkout-vehicle-id').val(vehicleId); // Set the vehicle ID in the hidden input
+    $('#garage-expense').val(''); // Clear the garage expense field
+// Clear the notes field
+    $('#checkoutModal').modal('show'); // Show the modal
+}
+
+// Handle form submission for checking out a vehicle
+$('#checkout-form').on('submit', function(event) {
+    event.preventDefault(); // Prevent the default form submission
+
+    const vehicleId = $('#checkout-vehicle-id').val();
+    const garageExpense = $('#garage-expense').val();
+   
+
+    $.ajax({
+        url: 'checkout_vehicle.php',
+        type: 'POST',
+        data: {
+            vehicle_id: vehicleId,
+            garage_expense: garageExpense,
+            
+        },
+        success: function(response) {
+            const res = JSON.parse(response);
+            if (res.status === 'success') {
+                alert(res.message);
+                $('#checkoutModal').modal('hide'); // Hide the modal on success
+                // Remove the checked-out vehicle from the garage list
+                $(`#garage-row-${vehicleId}`).remove();
+            } else {
+                alert(res.message);
+            }
+        },
+        error: function() {
+            alert('An error occurred while checking out the vehicle.');
+        }
+    });
+});
+
 </script>
 
 </body>

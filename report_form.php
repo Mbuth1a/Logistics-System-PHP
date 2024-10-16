@@ -36,6 +36,7 @@
             padding: 15px;
             flex: 1;
             background-color: #3f4f4f; /* Slightly lighter dark background */
+            
         }
         table {
             width: 100%;
@@ -87,7 +88,7 @@
                 <i class="fas fa-arrow-left"></i> Back to Dashboard
             </button>
     </div>
-    <div class="main-content">
+    <div class="main-content container col-md-10">
         <h1>Generate Vehicle Report</h1>
         <form id="report-form" method="POST" action="">
             <label for="start_date">Start Date:</label>

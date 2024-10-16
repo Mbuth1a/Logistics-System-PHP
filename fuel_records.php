@@ -1,3 +1,30 @@
+<?php
+include 'connection.php';
+session_start();
+
+// Fetch trips from the database that do not have fuel consumption recorded
+$query = "
+    SELECT t.trip_id, v.vehicle_regno, t.trip_date, t.from_location, t.to_location 
+    FROM trips t
+    JOIN vehicles v ON t.vehicle_id = t.vehicle_id
+    LEFT JOIN fuel f ON t.trip_id = f.trip_id
+    WHERE f.trip_id IS NULL"; // Filter trips that are not in the fuel table
+
+$result = $conn->query($query);
+
+// Fetch already saved fuel records from the database
+$fuelQuery = "
+    SELECT f.id, t.trip_id, v.vehicle_regno, f.fuel_consumed, f.created_at, t.from_location, t.to_location 
+    FROM fuel f
+    JOIN trips t ON f.trip_id = t.trip_id
+    JOIN vehicles v ON t.vehicle_id = t.vehicle_id
+    ORDER BY f.created_at DESC"; // Order by most recent fuel records
+
+$fuelResult = $conn->query($fuelQuery);
+
+$conn->close(); 
+?>
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -6,82 +33,11 @@
     <title>Fuel Management</title>
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
-    <style>
-        .sidebar {
-            height: 100vh;
-            position: fixed;
-            width: 200px;
-            background-color: #343a40;
-            color: white;
-            padding-top: 20px;
-        }
-        .sidebar a {
-            color: white;
-            display: block;
-            padding: 10px;
-            text-decoration: none;
-        }
-        .sidebar a:hover {
-            background-color: orange;
-            color: white;
-        }
-        .content {
-            margin-left: 220px;
-            padding: 20px;
-        }
-        .text-red { color: red; }
-        .bg-red { background-color: red; color: white; }
-        .card-header {
-            cursor: pointer;
-            background-color: #343a40;
-            color: white;
-            border: none;
-        }
-        .card-header:hover {
-            background-color: orange;
-            color: white;
-        }
-        .btn-primary:hover {
-            background-color: orange;
-            border-color: orange;
-        }
-        .monthly-consumption {
-            margin-top: 20px;
-        }
-        .vehicle-tab {
-            cursor: pointer;
-            padding: 10px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            margin-top: 5px;
-            background-color: #f8f9fa;
-        }
-        .vehicle-tab:hover {
-            background-color: #ffe5b4;
-        }
-        .collapse {
-            transition: height 0.35s ease;
-        }
-        .vehicle-details {
-            color: black;
-            font-size: 1.2em;
-            font-weight: bold;
-        }
-        .form-inline input {
-            margin-right: 10px;
-        }
-        .month-card {
-            margin-bottom: 15px;
-            cursor: pointer;
-        }
-        .month-card:hover {
-            background-color: #f8f9fa;
-        }
-    </style>
+    <link rel="stylesheet" href="css/fuel_records.css">        
 </head>
 <body>
     <div class="sidebar">
-        <a href="#" onclick="goBack()">Back to Dashboard</a>
+        <a href="dtms_dashboard.php"><i class="fas fa-arrow-left"></i> Back to Dashboard</a>
     </div>
 
     <div class="content">
@@ -108,6 +64,7 @@
         </div>
 
         <!-- Trips List -->
+        <h3 class="text-center">Trips Without Fuel Records</h3>
         <table class="table table-striped mt-4">
             <thead>
                 <tr>
@@ -120,21 +77,63 @@
                 </tr>
             </thead>
             <tbody id="tripsList">
-                <!-- Dynamically populated -->
+                <?php
+                // Check if the query was successful and if there are results
+                if ($result && $result->num_rows > 0) {
+                    // Output data for each trip
+                    while ($row = $result->fetch_assoc()) {
+                        echo "<tr>";
+                        echo "<td>" . htmlspecialchars($row['trip_id']) . "</td>";
+                        echo "<td>" . htmlspecialchars($row['vehicle_regno']) . "</td>";
+                        echo "<td>" . htmlspecialchars($row['trip_date']) . "</td>";
+                        echo "<td>" . htmlspecialchars($row['from_location']) . "</td>";
+                        echo "<td>" . htmlspecialchars($row['to_location']) . "</td>";
+                        echo "<td><button class='btn btn-info' onclick='openFuelModal(" . $row['trip_id'] . ", \"" . htmlspecialchars($row['vehicle_regno']) . "\", \"" . htmlspecialchars($row['trip_date']) . "\", \"" . htmlspecialchars($row['from_location']) . "\", \"" . htmlspecialchars($row['to_location']) . "\")'>Add Fuel</button></td>";
+                        echo "</tr>";
+                    }
+                } else {
+                    echo "<tr><td colspan='6' class='text-center'>No trips found</td></tr>";
+                }
+                ?>
             </tbody>
         </table>
 
-        <!-- Fuel Records Toggle Card -->
-        <div class="card mt-4">
-            <div class="card-header" onclick="toggleFuelRecords()">
-                <h5 class="card-title">FUEL RECORDS</h5>
-            </div>
-            <div class="card-body collapse" id="fuelRecords">
-                <div id="fuelCards" class="mt-4">
-                    <!-- Fuel cards will be dynamically inserted here -->
-                </div>
-            </div>
-        </div>
+        <!-- Fuel Records Table -->
+        <h3 class="text-center mt-5">Saved Fuel Records</h3>
+        <table class="table table-striped mt-4">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Vehicle</th>
+                    <th>Trip Date</th>
+                    <th>From Location</th>
+                    <th>To Location</th>
+                    <th>Fuel Consumed (liters)</th>
+                    <th>Recorded At</th>
+                </tr>
+            </thead>
+            <tbody id="fuelRecordsList">
+                <?php
+                // Check if the fuel query was successful and if there are results
+                if ($fuelResult && $fuelResult->num_rows > 0) {
+                    // Output data for each fuel record
+                    while ($fuelRow = $fuelResult->fetch_assoc()) {
+                        echo "<tr>";
+                        echo "<td>" . htmlspecialchars($fuelRow['id']) . "</td>";
+                        echo "<td>" . htmlspecialchars($fuelRow['vehicle_regno']) . "</td>";
+                        echo "<td>" . htmlspecialchars($fuelRow['created_at']) . "</td>";
+                        echo "<td>" . htmlspecialchars($fuelRow['from_location']) . "</td>";
+                        echo "<td>" . htmlspecialchars($fuelRow['to_location']) . "</td>";
+                        echo "<td>" . htmlspecialchars($fuelRow['fuel_consumed']) . " liters</td>";
+                        echo "<td>" . htmlspecialchars($fuelRow['created_at']) . "</td>";
+                        echo "</tr>";
+                    }
+                } else {
+                    echo "<tr><td colspan='7' class='text-center'>No fuel records found</td></tr>";
+                }
+                ?>
+            </tbody>
+        </table>
     </div>
 
     <!-- Modal for Fuel Consumption -->
@@ -150,6 +149,7 @@
                 <div class="modal-body">
                     <form id="fuelForm">
                         <input type="hidden" id="tripId">
+                        <input type="hidden" id="csrfToken" value="<?php echo $_SESSION['csrf_token']; ?>">
                         <div class="form-group">
                             <label for="vehicle">Vehicle</label>
                             <input type="text" class="form-control" id="vehicle" readonly>
@@ -168,13 +168,13 @@
                         </div>
                         <div class="form-group">
                             <label for="fuelConsumed">Fuel Consumed (liters)</label>
-                            <input type="number" class="form-control" id="fuelConsumed" min="0" step="0.01">
+                            <input type="number" class="form-control" id="fuelConsumed" min="0" step="0.01" required>
                         </div>
                     </form>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
-                    <button type="button" class="btn btn-primary" onclick="saveFuel()">Save</button>
+                    <button type="button" class="btn btn-primary">Save</button>
                 </div>
             </div>
         </div>
@@ -182,249 +182,51 @@
 
     <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+
     <script>
-        $(document).ready(function() {
-            fetchVehicles();
-            searchFuelRecords();
-            
-            $('#fuelCards').on('click', '.card-header', function() {
-                $(this).next('.card-body').collapse('toggle');
-            });
-        });
-        
-        function goBack() {
-            window.location.href = 'dtms_dashboard.php';  // PHP-friendly URL
-        }
-        
-        function toggleFuelRecords() {
-            $('#fuelRecords').collapse('toggle');
-        }
-        
-        function openFuelModal(tripId, vehicle, date, from, to) {
+        // Function to open the modal and populate data
+        function openFuelModal(tripId, vehicle, tripDate, fromLocation, toLocation) {
             $('#tripId').val(tripId);
             $('#vehicle').val(vehicle);
-            $('#tripDate').val(date);
-            $('#fromLocation').val(from);
-            $('#toLocation').val(to);
+            $('#tripDate').val(tripDate);
+            $('#fromLocation').val(fromLocation);
+            $('#toLocation').val(toLocation);
             $('#fuelModal').modal('show');
         }
-        
-        function saveFuel() {
-            let tripId = $('#tripId').val();
-            let fuelConsumed = $('#fuelConsumed').val();
-        
-            $.ajax({
-                url: "save_fuel.php",  // PHP endpoint to save fuel
-                method: 'POST',
-                data: {
-                    trip_id: tripId,
-                    fuel_consumed: fuelConsumed,
-                    csrf_token: ''  // Replace with a function that generates a CSRF token in PHP
-                },
-                success: function(response) {
-                    if (response.success) {
-                        $('#fuelModal').modal('hide');
-                        searchFuelRecords(); // Refresh fuel records
-                    } else {
-                        alert(response.error);
-                    }
-                }
-            });
-        }
-        
-        function updateMonthlyConsumption(vehicleRegNo, month, fuelConsumed) {
-            const monthCard = $(`#monthlyConsumption-${vehicleRegNo} .month-card:nth-child(${month})`);
-            let totalConsumption = 0;
-    
-            if (monthCard.length) {
-                const monthCardBody = monthCard.find('.card-body');
-                const currentMonthText = monthCardBody.text().trim();
-                
-                let currentConsumption = parseFloat(monthCardBody.data('consumption')) || 0;
-                totalConsumption = currentConsumption + parseFloat(fuelConsumed);
-                monthCardBody.data('consumption', totalConsumption.toFixed(2));
-                
-                monthCardBody.html(`<h6 class="card-title">${currentMonthText}</h6><p>${totalConsumption.toFixed(2)} liters</p>`);
-            } else {
-                // If monthCard is not found, create it
-                const newMonthCard = `
-                    <div class="col-md-3 col-sm-6 month-card text-center">
-                        <div class="card bg-light">
-                            <div class="card-body" data-consumption="${parseFloat(fuelConsumed).toFixed(2)}">
-                                <h6 class="card-title">${getMonthName(month)}</h6>
-                                <p>${parseFloat(fuelConsumed).toFixed(2)} liters</p>
-                            </div>
-                        </div>
-                    </div>
-                `;
-                $(`#monthlyConsumption-${vehicleRegNo}`).find('.row').append(newMonthCard);
-            }
-        }
-    
-        // Function to convert month number to month name
-        function getMonthName(month) {
-            const months = [
-                "January", "February", "March", "April", "May", "June",
-                "July", "August", "September", "October", "November", "December"
-            ];
-            return months[month - 1];
-        }
-    
-        // Function to handle saving fuel
-        function saveFuel() {
-            let tripId = $('#tripId').val();
-            let fuelConsumed = $('#fuelConsumed').val();
-            
-            $.ajax({
-                url: "save_fuel.php",  // PHP endpoint to save fuel
-                method: 'POST',
-                data: {
-                    trip_id: tripId,
-                    fuel_consumed: fuelConsumed,
-                    csrf_token: ''  // Replace with PHP CSRF function
-                },
-                success: function(response) {
-                    if (response.success) {
-                        $('#fuelModal').modal('hide');
-                        searchFuelRecords(); // Refresh fuel records
-                        let trip = response.trip;  // Assuming response includes the trip data
-                        let tripDate = new Date(trip.date);
-                        let month = tripDate.getMonth() + 1; // Months are zero-based
-                        let vehicleRegNo = trip.vehicle_regno;
-                        updateMonthlyConsumption(vehicleRegNo, month, fuelConsumed);
-                    } else {
-                        alert(response.error);
-                    }
-                }
-            });
-        }
-        
-        function searchFuelRecords() {
-            let startDate = $('#startDate').val();
-            let endDate = $('#endDate').val();
-            let vehicle = $('#vehicleSelect').val();
-        
-            $.ajax({
-                url: "fetch_fuel_records.php",  // PHP endpoint to fetch fuel records
-                method: 'GET',
-                data: {
-                    start_date: startDate,
-                    end_date: endDate,
-                    vehicle: vehicle
-                },
-                success: function(response) {
-                    let tripsList = $('#tripsList');
-                    tripsList.empty();
-                    let fuelCards = $('#fuelCards');
-                    fuelCards.empty();
-                    let groupedData = {};
-        
-                    response.trips.forEach(trip => {
-                        if (!trip.fuel_consumed) {
-                            let row = `
-                                <tr data-id="${trip.id}">
-                                    <td>${trip.id}</td>
-                                    <td>${trip.vehicle}</td>
-                                    <td>${trip.date}</td>
-                                    <td>${trip.from_location}</td>
-                                    <td>${trip.to_location}</td>
-                                    <td><button class="btn bg-red" onclick="openFuelModal(${trip.id}, '${trip.vehicle}', '${trip.date}', '${trip.from_location}', '${trip.to_location}')">Assign Fuel</button></td>
-                                </tr>
-                            `;
-                            tripsList.append(row);
+
+        $(document).ready(function() {
+            // Update the fuel record when the Save button is clicked in the modal
+            $('.btn-primary').click(function() {
+                // Gather the data from the modal inputs
+                const tripId = $('#tripId').val();
+                const fuelConsumed = $('#fuelConsumed').val();
+                const csrfToken = $('#csrfToken').val();
+
+                // Send an AJAX request to save the fuel record
+                $.ajax({
+                    url: 'save_fuel.php',
+                    type: 'POST',
+                    data: {
+                        tripId: tripId,
+                        fuelConsumed: fuelConsumed,
+                        csrfToken: csrfToken
+                    },
+                    dataType: 'json',
+                    success: function(response) {
+                        if (response.status === 'success') {
+                            alert('Fuel record saved successfully');
+                            $('#fuelModal').modal('hide');
+                            location.reload(); // Refresh the page to update the trips and fuel records list
                         } else {
-                            let tripDate = new Date(trip.date);
-                            let month = tripDate.getMonth() + 1; // Months are zero-based
-                            if (!groupedData[trip.vehicle]) {
-                                groupedData[trip.vehicle] = { fuelRecords: [], monthlyData: {} };
-                            }
-                            if (!groupedData[trip.vehicle].monthlyData[month]) {
-                                groupedData[trip.vehicle].monthlyData[month] = 0;
-                            }
-                            groupedData[trip.vehicle].monthlyData[month] += parseFloat(trip.fuel_consumed);
-                            groupedData[trip.vehicle].fuelRecords.push(trip);
+                            alert('Error: ' + response.message);
                         }
-                    });
-        
-                    for (const [vehicle, data] of Object.entries(groupedData)) {
-                        let card = `
-                            <div class="card mt-3">
-                                <div class="card-header">
-                                    <h5 class="card-title">${vehicle}</h5>
-                                </div>
-                                <div class="card-body collapse">
-                                    <!-- Table for fuel records -->
-                                    <div class="fuel-records-table mb-4">
-                                        <h6>Fuel Records</h6>
-                                        <table class="table table-striped">
-                                            <thead>
-                                                <tr>
-                                                    <th>ID</th>
-                                                    <th>Date</th>
-                                                    <th>From Location</th>
-                                                    <th>To Location</th>
-                                                    <th>Fuel Consumed (liters)</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                ${data.fuelRecords.map(trip => `
-                                                    <tr>
-                                                        <td>${trip.id}</td>
-                                                        <td>${trip.date}</td>
-                                                        <td>${trip.from_location}</td>
-                                                        <td>${trip.to_location}</td>
-                                                        <td>${trip.fuel_consumed || 'N/A'}</td>
-                                                    </tr>
-                                                `).join('')}
-                                            </tbody>
-                                        </table>
-                                    </div>
-                                    <!-- Monthly consumption -->
-                                    <div class="monthly-consumption">
-                                        <h6>Monthly Consumption</h6>
-                                        <div class="row" id="monthlyConsumption-${vehicle}">
-                        `;
-                        const monthsList = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
-                        monthsList.forEach((monthName, index) => {
-                            let monthNumber = index + 1;
-                            let consumption = data.monthlyData[monthNumber] || 0;
-                            card += `
-                                <div class="col-md-3 col-sm-6 month-card text-center">
-                                    <div class="card bg-light">
-                                        <div class="card-body" data-consumption="${consumption}">
-                                            <h6 class="card-title">${monthName}</h6>
-                                            <p>${consumption.toFixed(2)} liters</p>
-                                        </div>
-                                    </div>
-                                </div>
-                            `;
-                        });
-                        card += `
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        `;
-                        fuelCards.append(card);
+                    },
+                    error: function() {
+                        alert('An error occurred while saving the fuel record');
                     }
-                }
+                });
             });
-        }
-        
-        function fetchVehicles() {
-            $.ajax({
-                url: "fetch_vehicle_list.php",  // PHP endpoint to fetch vehicle list
-                method: 'GET',
-                success: function(response) {
-                    let vehicleSelect = $('#vehicleSelect');
-                    vehicleSelect.empty();
-                    vehicleSelect.append('<option value="">All Vehicles</option>');
-                    response.vehicles.forEach(vehicle => {
-                        vehicleSelect.append(`<option value="${vehicle.id}">${vehicle.vehicle_regno}</option>`);
-                    });
-                }
-            });
-        }
+        });
     </script>
 </body>
 </html>
