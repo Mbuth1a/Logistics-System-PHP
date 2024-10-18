@@ -149,7 +149,7 @@ $conn->close();
                 <div class="modal-body">
                     <form id="fuelForm">
                         <input type="hidden" id="tripId">
-                        <input type="hidden" id="csrfToken" value="<?php echo $_SESSION['csrf_token']; ?>">
+                        <input type="hidden" id="csrfToken" value="<?php echo $_SESSION['csrf_token'];?>">
                         <div class="form-group">
                             <label for="vehicle">Vehicle</label>
                             <input type="text" class="form-control" id="vehicle" readonly>

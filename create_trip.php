@@ -6,14 +6,16 @@ if ($conn->connect_error) {
     die("Connection failed: " . $conn->connect_error);
 }
 
-// Fetch drivers, co-drivers, and vehicles for dropdowns
-$drivers_sql = "SELECT id, full_name FROM drivers";
+// Fetch drivers who are not involved in ongoing trips
+$drivers_sql = "SELECT id, full_name FROM drivers WHERE id NOT IN (SELECT driver_id FROM trips WHERE trip_status = 'ongoing')";
 $drivers_result = $conn->query($drivers_sql);
 
-$co_drivers_sql = "SELECT id, full_name FROM co_drivers";
+// Fetch co-drivers who are not involved in ongoing trips
+$co_drivers_sql = "SELECT id, full_name FROM co_drivers WHERE id NOT IN (SELECT co_driver_id FROM trips WHERE trip_status = 'ongoing')";
 $co_drivers_result = $conn->query($co_drivers_sql);
 
-$vehicles_sql = "SELECT id, vehicle_regno FROM vehicles";
+// Fetch vehicles that are not involved in ongoing trips
+$vehicles_sql = "SELECT id, vehicle_regno FROM vehicles WHERE id NOT IN (SELECT vehicle_id FROM trips WHERE trip_status = 'ongoing')";
 $vehicles_result = $conn->query($vehicles_sql);
 
 // Handle form submission
@@ -30,10 +32,9 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $to_location = $_POST['to_location'];
     $est_distance = $_POST['est_distance'];
     $start_odometer = $_POST['start_odometer'];
-    
-    // No end_odometer in the query, we'll update it when the trip ends
-    $sql = "INSERT INTO trips (trip_date,trip_day , trip_time, trip_description, driver_id, co_driver_id, vehicle_id, from_location, stops, to_location, est_distance, start_odometer)
-            VALUES ('$trip_date', '$trip_day', '$trip_time', '$trip_description', '$driver_id', '$co_driver_id', '$vehicle_id', '$from_location', '$stops', '$to_location', '$est_distance', '$start_odometer')";
+
+    $sql = "INSERT INTO trips (trip_date, trip_day, trip_time, trip_description, driver_id, co_driver_id, vehicle_id, from_location, stops, to_location, est_distance, start_odometer, trip_status)
+            VALUES ('$trip_date', '$trip_day', '$trip_time', '$trip_description', '$driver_id', '$co_driver_id', '$vehicle_id', '$from_location', '$stops', '$to_location', '$est_distance', '$start_odometer', 'ongoing')";
 
     if ($conn->query($sql) === TRUE) {
         echo "Trip created successfully!";
@@ -44,6 +45,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
 $conn->close();
 ?>
+
 
 <!DOCTYPE html>
 <html lang="en">
