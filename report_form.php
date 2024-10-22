@@ -9,9 +9,10 @@ $reportData = [];
 $startDate = '';
 $endDate = '';
 
-// Clear session data on page load to ensure the report does not persist after reload
+// Clear session data and report data on page load (GET request)
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     unset($_SESSION['report_generated']);
+    $reportData = []; // Clear the report data on page load
 }
 
 // Process the form submission
@@ -36,7 +37,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         LEFT JOIN fuel f ON t.trip_id = f.trip_id
         LEFT JOIN expenses e ON t.trip_id = e.trip_id
         LEFT JOIN load_trip lp ON t.trip_id = lp.trip_id
-        LEFT JOIN garage g ON t.trip_id = g.id
+        LEFT JOIN garage g ON t.vehicle_id = g.vehicle_id
+            AND (g.checked_in_at BETWEEN '$startDate' AND '$endDate' OR g.checked_out_at BETWEEN '$startDate' AND '$endDate')
         WHERE t.trip_date BETWEEN '$startDate' AND '$endDate'
         GROUP BY v.vehicle_regno
     ";

@@ -1,6 +1,15 @@
 <?php
 include 'connection.php';
 session_start();
+// Pagination variables
+$entries_per_page = 25; // Number of entries per page
+$current_page = isset($_GET['page']) ? (int)$_GET['page'] : 1; // Current page from query string
+$offset = ($current_page - 1) * $entries_per_page; // Offset for SQL query
+
+// Generate a CSRF token if not already set
+if (!isset($_SESSION['csrf_token'])) {
+    $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+}
 
 // Fetch trips from the database that do not have fuel consumption recorded
 $query = "
@@ -8,21 +17,35 @@ $query = "
     FROM trips t
     JOIN vehicles v ON t.vehicle_id = t.vehicle_id
     LEFT JOIN fuel f ON t.trip_id = f.trip_id
-    WHERE f.trip_id IS NULL"; // Filter trips that are not in the fuel table
+    WHERE f.trip_id IS NULL
+    LIMIT $entries_per_page OFFSET $offset";
 
 $result = $conn->query($query);
 
-// Fetch already saved fuel records from the database
+// Fetch total number of trips without fuel records for pagination
+$total_query = "SELECT COUNT(*) as total FROM trips t LEFT JOIN fuel f ON t.trip_id = f.trip_id WHERE f.trip_id IS NULL";
+$total_result = $conn->query($total_query);
+$total_row = $total_result->fetch_assoc();
+$total_trips = $total_row['total'];
+$total_pages = ceil($total_trips / $entries_per_page); // Total pages for pagination
+
+// Fetch already saved fuel records from the database for pagination
 $fuelQuery = "
     SELECT f.id, t.trip_id, v.vehicle_regno, f.fuel_consumed, f.created_at, t.from_location, t.to_location 
     FROM fuel f
     JOIN trips t ON f.trip_id = t.trip_id
     JOIN vehicles v ON t.vehicle_id = t.vehicle_id
-    ORDER BY f.created_at DESC"; // Order by most recent fuel records
-
+    LIMIT $entries_per_page OFFSET $offset"; // Pagination on fuel records
 $fuelResult = $conn->query($fuelQuery);
 
-$conn->close(); 
+// Fetch total number of saved fuel records for pagination
+$total_fuel_query = "SELECT COUNT(*) as total FROM fuel";
+$total_fuel_result = $conn->query($total_fuel_query);
+$total_fuel_row = $total_fuel_result->fetch_assoc();
+$total_fuel_records = $total_fuel_row['total'];
+$total_fuel_pages = ceil($total_fuel_records / $entries_per_page); // Total pages for fuel records pagination
+
+$conn->close();
 ?>
 
 <!DOCTYPE html>
@@ -33,7 +56,7 @@ $conn->close();
     <title>Fuel Management</title>
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
-    <link rel="stylesheet" href="css/fuel_records.css">        
+    <link rel="stylesheet" href="css/fuel_records.css">
 </head>
 <body>
     <div class="sidebar">
@@ -78,9 +101,7 @@ $conn->close();
             </thead>
             <tbody id="tripsList">
                 <?php
-                // Check if the query was successful and if there are results
                 if ($result && $result->num_rows > 0) {
-                    // Output data for each trip
                     while ($row = $result->fetch_assoc()) {
                         echo "<tr>";
                         echo "<td>" . htmlspecialchars($row['trip_id']) . "</td>";
@@ -88,7 +109,7 @@ $conn->close();
                         echo "<td>" . htmlspecialchars($row['trip_date']) . "</td>";
                         echo "<td>" . htmlspecialchars($row['from_location']) . "</td>";
                         echo "<td>" . htmlspecialchars($row['to_location']) . "</td>";
-                        echo "<td><button class='btn btn-info' onclick='openFuelModal(" . $row['trip_id'] . ", \"" . htmlspecialchars($row['vehicle_regno']) . "\", \"" . htmlspecialchars($row['trip_date']) . "\", \"" . htmlspecialchars($row['from_location']) . "\", \"" . htmlspecialchars($row['to_location']) . "\")'>Add Fuel</button></td>";
+                        echo "<td><button class='btn btn-info' onclick='openFuelModal(" . htmlspecialchars($row['trip_id']) . ", \"" . addslashes(htmlspecialchars($row['vehicle_regno'])) . "\", \"" . addslashes(htmlspecialchars($row['trip_date'])) . "\", \"" . addslashes(htmlspecialchars($row['from_location'])) . "\", \"" . addslashes(htmlspecialchars($row['to_location'])) . "\")'>Add Fuel</button></td>";
                         echo "</tr>";
                     }
                 } else {
@@ -97,7 +118,26 @@ $conn->close();
                 ?>
             </tbody>
         </table>
-
+            <!-- Pagination Controls -->
+        <nav aria-label="Page navigation">
+            <ul class="pagination justify-content-center">
+                <li class="page-item <?php if ($current_page <= 1) echo 'disabled'; ?>">
+                    <a class="page-link" href="?page=<?php echo $current_page - 1; ?>" aria-label="Previous">
+                        <span aria-hidden="true">&laquo;</span>
+                    </a>
+                </li>
+                <?php for ($i = 1; $i <= $total_pages; $i++): ?>
+                    <li class="page-item <?php if ($current_page == $i) echo 'active'; ?>">
+                        <a class="page-link" href="?page=<?php echo $i; ?>"><?php echo $i; ?></a>
+                    </li>
+                <?php endfor; ?>
+                <li class="page-item <?php if ($current_page >= $total_pages) echo 'disabled'; ?>">
+                    <a class="page-link" href="?page=<?php echo $current_page + 1; ?>" aria-label="Next">
+                        <span aria-hidden="true">&raquo;</span>
+                    </a>
+                </li>
+            </ul>
+        </nav>
         <!-- Fuel Records Table -->
         <h3 class="text-center mt-5">Saved Fuel Records</h3>
         <table class="table table-striped mt-4">
@@ -114,9 +154,7 @@ $conn->close();
             </thead>
             <tbody id="fuelRecordsList">
                 <?php
-                // Check if the fuel query was successful and if there are results
                 if ($fuelResult && $fuelResult->num_rows > 0) {
-                    // Output data for each fuel record
                     while ($fuelRow = $fuelResult->fetch_assoc()) {
                         echo "<tr>";
                         echo "<td>" . htmlspecialchars($fuelRow['id']) . "</td>";
@@ -134,6 +172,26 @@ $conn->close();
                 ?>
             </tbody>
         </table>
+            <!-- Pagination Controls for Fuel Records -->
+        <nav aria-label="Fuel navigation">
+            <ul class="pagination justify-content-center">
+                <li class="page-item <?php if ($current_page <= 1) echo 'disabled'; ?>">
+                    <a class="page-link" href="?page=<?php echo $current_page - 1; ?>" aria-label="Previous">
+                        <span aria-hidden="true">&laquo;</span>
+                    </a>
+                </li>
+                <?php for ($i = 1; $i <= $total_fuel_pages; $i++): ?>
+                    <li class="page-item <?php if ($current_page == $i) echo 'active'; ?>">
+                        <a class="page-link" href="?page=<?php echo $i; ?>"><?php echo $i; ?></a>
+                    </li>
+                <?php endfor; ?>
+                <li class="page-item <?php if ($current_page >= $total_fuel_pages) echo 'disabled'; ?>">
+                    <a class="page-link" href="?page=<?php echo $current_page + 1; ?>" aria-label="Next">
+                        <span aria-hidden="true">&raquo;</span>
+                    </a>
+                </li>
+            </ul>
+        </nav>
     </div>
 
     <!-- Modal for Fuel Consumption -->
@@ -149,7 +207,7 @@ $conn->close();
                 <div class="modal-body">
                     <form id="fuelForm">
                         <input type="hidden" id="tripId">
-                        <input type="hidden" id="csrfToken" value="<?php echo $_SESSION['csrf_token'];?>">
+                        <input type="hidden" id="csrfToken" value="<?php echo $_SESSION['csrf_token']; ?>">
                         <div class="form-group">
                             <label for="vehicle">Vehicle</label>
                             <input type="text" class="form-control" id="vehicle" readonly>
@@ -174,7 +232,7 @@ $conn->close();
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
-                    <button type="button" class="btn btn-primary">Save</button>
+                    <button type="button" class="btn btn-primary" id="saveFuelBtn">Save</button>
                 </div>
             </div>
         </div>
@@ -183,50 +241,6 @@ $conn->close();
     <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
 
-    <script>
-        // Function to open the modal and populate data
-        function openFuelModal(tripId, vehicle, tripDate, fromLocation, toLocation) {
-            $('#tripId').val(tripId);
-            $('#vehicle').val(vehicle);
-            $('#tripDate').val(tripDate);
-            $('#fromLocation').val(fromLocation);
-            $('#toLocation').val(toLocation);
-            $('#fuelModal').modal('show');
-        }
-
-        $(document).ready(function() {
-            // Update the fuel record when the Save button is clicked in the modal
-            $('.btn-primary').click(function() {
-                // Gather the data from the modal inputs
-                const tripId = $('#tripId').val();
-                const fuelConsumed = $('#fuelConsumed').val();
-                const csrfToken = $('#csrfToken').val();
-
-                // Send an AJAX request to save the fuel record
-                $.ajax({
-                    url: 'save_fuel.php',
-                    type: 'POST',
-                    data: {
-                        tripId: tripId,
-                        fuelConsumed: fuelConsumed,
-                        csrfToken: csrfToken
-                    },
-                    dataType: 'json',
-                    success: function(response) {
-                        if (response.status === 'success') {
-                            alert('Fuel record saved successfully');
-                            $('#fuelModal').modal('hide');
-                            location.reload(); // Refresh the page to update the trips and fuel records list
-                        } else {
-                            alert('Error: ' + response.message);
-                        }
-                    },
-                    error: function() {
-                        alert('An error occurred while saving the fuel record');
-                    }
-                });
-            });
-        });
-    </script>
+    <script src="js/fuel_records.js"></script>
 </body>
 </html>

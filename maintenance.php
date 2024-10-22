@@ -79,7 +79,7 @@ if ($result->num_rows > 0) {
         $vehicles[] = $row;
     }
 }
-// Fetch maintenance schedules from the database
+
 // Fetch maintenance schedules from the database
 $sql = "SELECT ms.*, v.vehicle_regno 
         FROM maintenance_schedule ms 
@@ -189,7 +189,7 @@ if ($result->num_rows > 0) {
                 </div>
 
                 <h2 class="mt-6 mb-6">SCHEDULES</h2>
-                <!-- HTML Code to Display Maintenance Schedules -->
+               
                 <div class="row">
                     <?php if (!empty($schedules)): ?>
                         <?php foreach ($schedules as $schedule): ?>

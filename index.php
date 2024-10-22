@@ -1,3 +1,55 @@
+<?php
+session_start();
+require_once 'connection.php'; // Include your database connection file
+
+// Check if the user is already logged in
+if (isset($_SESSION['username'])) {
+    if ($_SESSION['role'] === 'ADMIN') {
+        header("Location: /DCL/DLMS/dashboard.php");
+        exit();
+    } else {
+        header("Location: /DCL/DLMS/dtms_dashboard.php");
+        exit();
+    }
+}
+
+// Initialize the error variable
+$error = ''; // Initialize as an empty string
+
+// Handle login form submission
+if ($_SERVER['REQUEST_METHOD'] == 'POST') {
+    $username = $_POST['username'];
+    $password = $_POST['password'];
+
+    // Query the database for the user
+    $stmt = $conn->prepare("SELECT * FROM users WHERE username = ?");
+    $stmt->bind_param("s", $username);
+    $stmt->execute();
+    $result = $stmt->get_result();
+
+    if ($result->num_rows > 0) {
+        $user = $result->fetch_assoc();
+
+        // Verify the password
+        if (($password)) {
+            $_SESSION['username'] = $user['username'];
+            $_SESSION['role'] = $user['role'];
+
+            // Redirect based on user role
+            if ($user['role'] === 'ADMIN') {
+                header("Location: /DCL/DLMS/dashboard.php");
+            } else {
+                header("Location: /DCL/DLMS/dtms_dashboard.php");
+            }
+            exit();
+        } else {
+            $error = "Invalid username or password."; // Set error message for incorrect password
+        }
+    } else {
+        $error = "Invalid username or password."; // Set error message for unknown username
+    }
+}
+?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -13,6 +65,7 @@
             background-size: cover;
             background-attachment: fixed;
             display: flex;
+            flex-direction: column; /* Changed to column for footer placement */
             justify-content: center;
             align-items: center;
             font-family: Arial, sans-serif;
@@ -88,8 +141,13 @@
             }
         }
 
-        ul {
-            display: none; 
+        footer {
+            position: absolute; /* Position footer at the bottom */
+            bottom: 20px;
+            text-align: center;
+            color: black;
+            font-size: 22px;
+            opacity: 1; /* Slight transparency */
         }
     </style>
 </head>
@@ -98,7 +156,7 @@
     <!-- Error pop-up -->
     <div id="errorPopup" class="error-popup"></div>
     
-    <form method="POST" action="login.php">
+    <form method="POST" action="">
         <div>
             <label for="username">Username:</label>
             <input type="text" id="username" name="username" required>
@@ -110,40 +168,27 @@
         <button type="submit">Login</button>
     </form>
 
-    <ul id="errorMessages">
-        <!-- PHP code for displaying error messages -->
-        <?php if (!empty($messages)): ?>
-            <?php foreach ($messages as $message): ?>
-                <li><?php echo $message; ?></li>
-            <?php endforeach; ?>
-        <?php endif; ?>
-    </ul>
-
     <script>
         // JavaScript pop-up error display
         window.onload = function() {
-            // Check for PHP error messages
-            const messages = document.querySelectorAll('#errorMessages li');
-            if (messages.length > 0) {
-                let errorPopup = document.getElementById('errorPopup');
-                let errorMessage = '';
-
-                // Loop through the messages
-                messages.forEach(function(message) {
-                    errorMessage += message.textContent + ' ';
-                });
-
-                // Display the error message in the pop-up
-                errorPopup.textContent = errorMessage.trim();
+            // Only show the error if the error variable is set
+            <?php if ($error): ?>
+                const errorPopup = document.getElementById('errorPopup');
+                errorPopup.textContent = "<?php echo addslashes($error); ?>"; // Escape the error message
                 errorPopup.style.display = 'block';
 
                 // Hide the pop-up after 5 seconds
                 setTimeout(function() {
                     errorPopup.style.display = 'none';
                 }, 5000);
-            }
+            <?php endif; ?>
         };
     </script>
+
+    <!-- Footer -->
+    <footer>
+        &copy; <?php echo date("Y"); ?> ESCO SOLUTIONS. All rights reserved.
+    </footer>
 
 </body>
 </html>

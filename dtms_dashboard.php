@@ -7,105 +7,7 @@
   <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
   <link rel="stylesheet" href="/path/to/your/css/dtms_dashboard.css"> <!-- Replace with the actual path to your CSS file -->
-  <style>
-    .body {
-      background-color: #333;
-      color: #fff;
-    }
-    .nav-link {
-      transition: transform 0.2s ease;
-      color: #fff;
-      font-size: 20px;
-      padding: 10px 20px;
-    }
-    .nav-link:hover {
-      transform: translateX(10px);
-      color: #ff9800;
-    }
-    .sidebar {
-      width: 300px;
-      position: fixed;
-      top: 0;
-      bottom: 0;
-      left: 0;
-      padding-top: 20px;
-      background-color: #333;
-    }
-    .sidebar h2 {
-      color: #ff9800;
-      font-size: 40px;
-      padding-left: 20px;
-    }
-    .container {
-      padding: 20px;
-      margin-left: 300px;
-      max-width: calc(100% - 320px);
-    }
-    .row {
-      margin-right: 0;
-      margin-left: 0;
-    }
-    .col-lg-3, .col-md-6 {
-      padding: 15px;
-    }
-    .card {
-      background-color: #6c757d;
-    }
-    .card-body {
-      color: #fff;
-    }
-    .card .text-white-50 {
-      color: rgba(255, 255, 255, 0.5);
-    }
-    .sub-menu {
-      display: none;
-      margin-left: 0;
-      padding-left: 0;
-    }
-    .nav-item:hover .sub-menu {
-      display: block;
-    }
-    .sub-menu .nav-link {
-      font-size: 18px;
-      padding-left: 40px;
-    }
-    .nav-item .fa-plus {
-      float: right;
-      margin-left: 10px;
-    }
-    .nav-item.active .fa-plus {
-      transform: rotate(60deg);
-    }
-    .navbar {
-      margin-left: 300px;
-      background-color: #333;
-      padding-top: 5px;
-      padding-bottom: 5px;
-      height: 60px;
-    }
-    .navbar .navbar-nav .nav-link {
-      color: #fff;
-    }
-    .navbar .navbar-nav .nav-link:hover {
-      color: #ff9800;
-    }
-    .logout-button {
-      color: #ff9800;
-      background-color: transparent;
-      border: 1px solid #ff9800;
-      transition: background-color 0.3s ease, color 0.3s ease;
-    }
-    .logout-button:hover {
-      color: #fff;
-      background-color: #ff9800;
-    }
-    .table thead th {
-      color: #ff9800;
-    }
-    .table tbody td {
-      color: #fff;
-    }
-  </style>
+  <link rel="stylesheet"href = "css/dtms_dashboard.css">
 </head>
 <body>
   <div class="sidebar">
@@ -174,8 +76,9 @@
       <div class="collapse navbar-collapse">
         <ul class="navbar-nav ml-auto">
           <li class="nav-item">
-            <button class="btn btn-danger" onclick="logoutUser()">
-              <i class="fas fa-sign-out-alt"></i> Logout
+            <button class="btn btn-danger">
+              <i class="fas fa-sign-out-alt"></i> 
+              <a href="logout.php">Logout</a>
             </button>
           </li>
         </ul>
@@ -274,8 +177,7 @@
     <div id="notification" class="alert alert-danger" style="display: none;" role="alert">
         Some maintenance schedules have turned red. Please check immediately.
     </div>
-  </div>
-
+</div>
   <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.2/dist/umd/popper.min.js"></script>
   <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
@@ -284,45 +186,10 @@
   
   <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.1/dist/umd/popper.min.js"></script>
   <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
-  <script>
-    // Event listener for opening the modal and setting the trip ID
-    $(document).on('click', '[data-target="#endTripModal"]', function () {
-        // Get the trip ID from the button's data attribute
-        var tripId = $(this).data('trip-id');
-        // Set the trip ID in the hidden input field in the modal
-        $('#trip-id').val(tripId);
-    });
-
-    // Event listener for the End Trip form submission
-    $('#submit-end-trip').on('click', function () {
-        // Get the values from the form
-        var tripId = $('#trip-id').val();
-        var endOdometer = $('#end-odometer').val();
-
-        // Perform an AJAX request to send data to the PHP file for processing
-        $.ajax({
-            url: 'end_trip.php', // The PHP file that will handle the request
-            type: 'POST',
-            data: {
-                trip_id: tripId,
-                end_odometer: endOdometer
-            },
-            success: function (response) {
-                var jsonResponse = JSON.parse(response);
-                if (jsonResponse.status === 'success') {
-                    alert('Trip ended successfully!');
-                    location.reload(); // Reload the page to refresh the ongoing trips table
-                } else {
-                    alert('Error: ' + jsonResponse.message);
-                }
-            },
-            error: function () {
-                // Handle error - display an error message to the user
-                alert('An error occurred while ending the trip. Please try again.');
-            }
-        });
-    });
-</script>
-
+  <script src="js/dtms_dashboard.js"></script>
+<!-- Footer -->
+<footer>
+        &copy; <?php echo date("Y"); ?> ESCO SOLUTIONS. All rights reserved.
+    </footer>
 </body>
 </html>

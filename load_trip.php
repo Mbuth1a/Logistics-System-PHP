@@ -1,14 +1,18 @@
 <?php
-// load_trip.php
-
 // Include the database connection file
 include 'connection.php';
+session_start();
+
+// Generate a CSRF token if not already set
+if (!isset($_SESSION['csrf_token'])) {
+    $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+}
 
 // Initialize variables for error and success messages
 $errorMsg = '';
 $successMsg = '';
 
-// Fetch trips from the database
+// Fetch trips from the database, excluding those already loaded in the load_trip table
 $tripOptions = '';
 $sql = "SELECT 
             trips.trip_id, 
@@ -23,7 +27,9 @@ $sql = "SELECT
         FROM trips
         LEFT JOIN drivers ON trips.driver_id = drivers.id
         LEFT JOIN co_drivers ON trips.co_driver_id = co_drivers.id
-        LEFT JOIN vehicles ON trips.vehicle_id = vehicles.id";
+        LEFT JOIN vehicles ON trips.vehicle_id = vehicles.id
+        LEFT JOIN load_trip ON trips.trip_id = load_trip.trip_id
+        WHERE load_trip.trip_id IS NULL"; // Filter out trips already in load_trip table
 
 $result = $conn->query($sql);
 
@@ -108,7 +114,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 $conn->close();
 ?>
 
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -125,9 +130,22 @@ $conn->close();
     </div>
     <div class="container-fluid main-content col-md-10">
         <h2 class="text-center text-orange"><i class="fas fa-box"></i> Load Trip</h2>
-        
+
+        <!-- JavaScript code to display success or error messages -->
+        <?php if ($successMsg): ?>
+            <script>
+                alert("<?php echo $successMsg; ?>");
+            </script>
+        <?php endif; ?>
+
+        <?php if ($errorMsg): ?>
+            <script>
+                alert("<?php echo $errorMsg; ?>");
+            </script>
+        <?php endif; ?>
+
         <form id="loadTripForm" method="post" action="load_trip.php">
-            <input type="hidden" name="csrf_token" value="">
+            <input type="hidden" name="csrf_token" value="<?php echo $_SESSION['csrf_token']; ?>">
             <div class="form-group">
                 <label for="id_trip"><i class="fas fa-cube"></i> Trip</label>
                 <select id="id_trip" name="trip_id" class="form-control" onchange="tripSelected()">
@@ -174,105 +192,6 @@ $conn->close();
         </form>
     </div>
 
-<script>
-    let products = [];
-
-    function prepareProductData() {
-        document.getElementById('products_data').value = JSON.stringify(products);
-    }
-
-    let totalWeightOfProducts = 0;
-
-    function tripSelected() {
-        const tripSelect = document.getElementById('id_trip');
-        const productSection = document.getElementById('product-section');
-        
-        // Check if a trip has been selected
-        productSection.style.display = tripSelect.value ? 'block' : 'none';
-    }
-
-    function searchProduct() {
-        const input = document.getElementById('product_search').value.toLowerCase();
-        const productSelect = document.getElementById('id_product');
-        const options = productSelect.getElementsByTagName('option');
-
-        for (let i = 0; i < options.length; i++) {
-            const optionText = options[i].text.toLowerCase();
-
-            // Show or hide the option based on whether it matches the search query
-            if (optionText.includes(input)) {
-                options[i].style.display = '';
-            } else {
-                options[i].style.display = 'none';
-            }
-        }
-    }
-
-    function productSelected() {
-        calculateTotalWeight();
-    }
-
-    function calculateTotalWeight() {
-        const productSelect = document.getElementById('id_product');
-        const selectedOption = productSelect.options[productSelect.selectedIndex];
-        const quantityInput = document.getElementById('id_quantity');
-        const totalWeightInput = document.getElementById('id_total_weight');
-
-        const weightPerMetre = parseFloat(selectedOption.dataset.weightPerMetre);
-        const metres = parseFloat(selectedOption.dataset.metres);
-        const quantity = parseInt(quantityInput.value) || 0;
-
-        // Calculate total weight
-        const totalWeight = weightPerMetre * metres * quantity;
-        totalWeightInput.value = totalWeight.toFixed(2);
-    }
-
-    function addProduct() {
-        const productSelect = document.getElementById('id_product');
-        const selectedOption = productSelect.options[productSelect.selectedIndex];
-        const quantityInput = document.getElementById('id_quantity');
-        const totalWeightInput = document.getElementById('id_total_weight');
-
-        const productId = selectedOption.value;
-        const productDescription = selectedOption.text;
-        const quantity = parseInt(quantityInput.value) || 0;
-        const totalWeight = parseFloat(totalWeightInput.value) || 0;
-
-        // Check if product is already in the list
-        const existingProduct = products.find(product => product.id === productId);
-        if (existingProduct) {
-            existingProduct.quantity += quantity;
-            existingProduct.total_weight += totalWeight;
-        } else {
-            products.push({
-                id: productId,
-                description: productDescription,
-                quantity: quantity,
-                total_weight: totalWeight
-            });
-        }
-
-        totalWeightOfProducts += totalWeight;
-
-        // Update the total weight of all products input
-        document.getElementById('total_weight_of_products').value = totalWeightOfProducts.toFixed(2);
-        prepareProductData();
-
-        displayProducts();
-    }
-
-    function displayProducts() {
-        const productsList = document.getElementById('products-list');
-        productsList.innerHTML = '';
-
-        products.forEach(product => {
-            productsList.innerHTML += `
-                <div class="alert alert-info">
-                    ${product.description} - Quantity: ${product.quantity} - Total Weight: ${product.total_weight.toFixed(2)}
-                </div>
-            `;
-        });
-    }
-</script>
+    <script src="js/load_trip.js"></script>
 </body>
 </html>

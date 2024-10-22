@@ -1,0 +1,105 @@
+.body {
+    background-color: #333;
+    color: #fff;
+  }
+  .nav-link {
+    transition: transform 0.2s ease;
+    color: #fff;
+    font-size: 20px;
+    padding: 10px 20px;
+  }
+  .nav-link:hover {
+    transform: translateX(10px);
+    color: #ff9800;
+  }
+  .sidebar {
+    width: 300px;
+    position: fixed;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    padding-top: 20px;
+    background-color: #333;
+  }
+  .sidebar h2 {
+    color: #ff9800;
+    font-size: 40px;
+    padding-left: 20px;
+  }
+  .container {
+    padding: 20px;
+    margin-left: 300px;
+    max-width: calc(100% - 320px);
+  }
+  .row {
+    margin-right: 0;
+    margin-left: 0;
+  }
+  .col-lg-3, .col-md-6 {
+    padding: 15px;
+  }
+  .card {
+    background-color: #6c757d;
+  }
+  .card-body {
+    color: #fff;
+  }
+  .card .text-white-50 {
+    color: rgba(255, 255, 255, 0.5);
+  }
+  .sub-menu {
+    display: none;
+    margin-left: 0;
+    padding-left: 0;
+  }
+  .nav-item:hover .sub-menu {
+    display: block;
+  }
+  .sub-menu .nav-link {
+    font-size: 18px;
+    padding-left: 40px;
+  }
+  .nav-item .fa-plus {
+    float: right;
+    margin-left: 10px;
+  }
+  .nav-item.active .fa-plus {
+    transform: rotate(60deg);
+  }
+  .navbar {
+    margin-left: 300px;
+    background-color: #333;
+    padding-top: 5px;
+    padding-bottom: 5px;
+    height: 60px;
+  }
+  .navbar .navbar-nav .nav-link {
+    color: #fff;
+  }
+  .navbar .navbar-nav .nav-link:hover {
+    color: #ff9800;
+  }
+  .logout-button {
+    color: #ff9800;
+    background-color: transparent;
+    border: 1px solid #ff9800;
+    transition: background-color 0.3s ease, color 0.3s ease;
+  }
+  .logout-button:hover {
+    color: #fff;
+    background-color: #ff9800;
+  }
+  .table thead th {
+    color: #ff9800;
+  }
+  .table tbody td {
+    color: #fff;
+  }
+  footer {
+    position: absolute; /* Position footer at the bottom */
+    bottom: 20px;
+    text-align: center;
+    color: rgb(248, 157, 0);
+    font-size: 15px;
+    opacity: 0.8; /* Slight transparency */
+}

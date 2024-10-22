@@ -52,6 +52,19 @@ $tripQuery = "
 ";
 $tripResult = $conn->query($tripQuery);
 
+$results_per_page = 25; 
+
+// Determine the number of total results
+$totalExpensesQuery = "SELECT COUNT(*) as total FROM expenses";
+$totalExpensesResult = $conn->query($totalExpensesQuery);
+$totalExpenses = $totalExpensesResult->fetch_assoc()['total'];
+$total_pages = ceil($totalExpenses / $results_per_page); // Calculate total pages
+
+// Get the current page from the URL, default is page 1
+$current_page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
+$current_page = max(1, min($total_pages, $current_page)); // Ensure current page is within range
+$offset = ($current_page - 1) * $results_per_page;
+
 // Fetch already assigned expenses from the database
 $doneExpensesQuery = "
     SELECT 
@@ -80,6 +93,7 @@ $doneExpensesQuery = "
         vehicles ON trips.vehicle_id = vehicles.id 
     ORDER BY 
         trips.trip_date ASC
+    LIMIT $results_per_page OFFSET $offset
 ";
 $doneExpensesResult = $conn->query($doneExpensesQuery);
 ?>
@@ -153,50 +167,61 @@ $doneExpensesResult = $conn->query($doneExpensesQuery);
 
             <!-- Done Expenses Table -->
             <div class="done-expenses-table">
-                <h2>Done Expenses</h2>
-                <table class="table table-success table-striped">
-                    <thead>
+        <h2>Done Expenses</h2>
+        <table class="table table-success table-striped">
+            <thead>
+                <tr>
+                    <th>Trip ID</th>
+                    <th>Date</th>
+                    <th>Time</th>
+                    <th>Day</th>
+                    <th>Description</th>
+                    <th>Driver</th>
+                    <th>Co-Driver</th>
+                    <th>Vehicle</th>
+                    <th>From Location</th>
+                    <th>Stops</th>
+                    <th>To Location</th>
+                    <th>Driver Expense</th>
+                    <th>Co-Driver Expense</th>
+                </tr>
+            </thead>
+            <tbody id="doneExpensesTableBody">
+                <?php if ($doneExpensesResult->num_rows > 0): ?>
+                    <?php while ($expense = $doneExpensesResult->fetch_assoc()): ?>
                         <tr>
-                            <th>Trip ID</th>
-                            <th>Date</th>
-                            <th>Time</th>
-                            <th>Day</th>
-                            <th>Description</th>
-                            <th>Driver</th>
-                            <th>Co-Driver</th>
-                            <th>Vehicle</th>
-                            <th>From Location</th>
-                            <th>Stops</th>
-                            <th>To Location</th>
-                            <th>Driver Expense</th>
-                            <th>Co-Driver Expense</th>
+                            <td><?= $expense['trip_id'] ?></td>
+                            <td><?= $expense['trip_date'] ?></td>
+                            <td><?= $expense['trip_time'] ?></td>
+                            <td><?= $expense['trip_day'] ?></td>
+                            <td><?= $expense['trip_description'] ?></td>
+                            <td><?= $expense['driver_full_name'] ?></td>
+                            <td><?= $expense['co_driver_full_name'] ?></td>
+                            <td><?= $expense['vehicle_regno'] ?></td>
+                            <td><?= $expense['from_location'] ?></td>
+                            <td><?= $expense['stops'] ?></td>
+                            <td><?= $expense['to_location'] ?></td>
+                            <td><?= $expense['driver_expense'] ?></td>
+                            <td><?= $expense['co_driver_expense'] ?></td>
                         </tr>
-                    </thead>
-                    <tbody id="doneExpensesTableBody">
-                        <?php if ($doneExpensesResult->num_rows > 0): ?>
-                            <?php while ($expense = $doneExpensesResult->fetch_assoc()): ?>
-                                <tr>
-                                    <td><?= $expense['trip_id'] ?></td>
-                                    <td><?= $expense['trip_date'] ?></td>
-                                    <td><?= $expense['trip_time'] ?></td>
-                                    <td><?= $expense['trip_day'] ?></td>
-                                    <td><?= $expense['trip_description'] ?></td>
-                                    <td><?= $expense['driver_full_name'] ?></td>
-                                    <td><?= $expense['co_driver_full_name'] ?></td>
-                                    <td><?= $expense['vehicle_regno'] ?></td>
-                                    <td><?= $expense['from_location'] ?></td>
-                                    <td><?= $expense['stops'] ?></td>
-                                    <td><?= $expense['to_location'] ?></td>
-                                    <td><?= $expense['driver_expense'] ?></td>
-                                    <td><?= $expense['co_driver_expense'] ?></td>
-                                </tr>
-                            <?php endwhile; ?>
-                        <?php else: ?>
-                            <tr><td colspan="13">No expenses found</td></tr>
-                        <?php endif; ?>
-                    </tbody>
-                </table>
-            </div>
+                    <?php endwhile; ?>
+                <?php else: ?>
+                    <tr><td colspan="13">No expenses found</td></tr>
+                <?php endif; ?>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Pagination Controls -->
+    <nav aria-label="Page navigation">
+        <ul class="pagination justify-content-center">
+            <?php for ($page = 1; $page <= $total_pages; $page++): ?>
+                <li class="page-item <?= $page === $current_page ? 'active' : '' ?>">
+                    <a class="page-link" href="expenses.php?page=<?= $page ?>"><?= $page ?></a>
+                </li>
+            <?php endfor; ?>
+        </ul>
+    </nav>
         </div>
     </div>
         
@@ -231,55 +256,6 @@ $doneExpensesResult = $conn->query($doneExpensesQuery);
 
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
-    <script>
-        function openAssignExpenseModal(tripData) {
-            document.getElementById('modalTripId').textContent = tripData.trip_id;
-            document.getElementById('tripId').value = tripData.trip_id;
-            new bootstrap.Modal(document.getElementById('assignExpenseModal')).show();
-        }
-
-        function assignExpense() {
-            const form = document.getElementById('assignExpenseForm');
-            const formData = new FormData(form);
-
-            fetch('expenses.php', {
-                method: 'POST',
-                body: formData
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.status === 'success') {
-                    alert(data.message);
-                    const tripId = data.trip_id;
-                    const tripRow = document.getElementById('trip-row-' + tripId);
-                    tripRow.remove();
-                    moveToDoneExpenses(data); // Function to update the Done Expenses table
-                } else {
-                    alert(data.message);
-                }
-            });
-        }
-
-        function moveToDoneExpenses(data) {
-            const doneExpensesTableBody = document.getElementById('doneExpensesTableBody');
-            const newRow = document.createElement('tr');
-            newRow.innerHTML = `
-                <td>${data.trip_id}</td>
-                <td>${data.trip_date}</td>
-                <td>${data.trip_time}</td>
-                <td>${data.trip_day}</td>
-                <td>${data.trip_description}</td>
-                <td>${data.driver_full_name}</td>
-                <td>${data.co_driver_full_name}</td>
-                <td>${data.vehicle_regno}</td>
-                <td>${data.from_location}</td>
-                <td>${data.stops}</td>
-                <td>${data.to_location}</td>
-                <td>${data.driver_expense}</td>
-                <td>${data.co_driver_expense}</td>
-            `;
-            doneExpensesTableBody.appendChild(newRow);
-        }
-    </script>
+    <script src="js/expenses.js"></script>
 </body>
 </html>

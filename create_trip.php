@@ -1,49 +1,5 @@
-<?php
-include 'connection.php';
-
-// Check connection
-if ($conn->connect_error) {
-    die("Connection failed: " . $conn->connect_error);
-}
-
-// Fetch drivers who are not involved in ongoing trips
-$drivers_sql = "SELECT id, full_name FROM drivers WHERE id NOT IN (SELECT driver_id FROM trips WHERE trip_status = 'ongoing')";
-$drivers_result = $conn->query($drivers_sql);
-
-// Fetch co-drivers who are not involved in ongoing trips
-$co_drivers_sql = "SELECT id, full_name FROM co_drivers WHERE id NOT IN (SELECT co_driver_id FROM trips WHERE trip_status = 'ongoing')";
-$co_drivers_result = $conn->query($co_drivers_sql);
-
-// Fetch vehicles that are not involved in ongoing trips
-$vehicles_sql = "SELECT id, vehicle_regno FROM vehicles WHERE id NOT IN (SELECT vehicle_id FROM trips WHERE trip_status = 'ongoing')";
-$vehicles_result = $conn->query($vehicles_sql);
-
-// Handle form submission
-if ($_SERVER["REQUEST_METHOD"] == "POST") {
-    $trip_date = $_POST['date'];
-    $trip_day = $_POST['day'];
-    $trip_time = $_POST['time'];
-    $trip_description = $_POST['description'];
-    $driver_id = $_POST['driver'];
-    $co_driver_id = $_POST['co_driver'];
-    $vehicle_id = $_POST['vehicle'];
-    $from_location = $_POST['from_location'];
-    $stops = $_POST['stops'];
-    $to_location = $_POST['to_location'];
-    $est_distance = $_POST['est_distance'];
-    $start_odometer = $_POST['start_odometer'];
-
-    $sql = "INSERT INTO trips (trip_date, trip_day, trip_time, trip_description, driver_id, co_driver_id, vehicle_id, from_location, stops, to_location, est_distance, start_odometer, trip_status)
-            VALUES ('$trip_date', '$trip_day', '$trip_time', '$trip_description', '$driver_id', '$co_driver_id', '$vehicle_id', '$from_location', '$stops', '$to_location', '$est_distance', '$start_odometer', 'ongoing')";
-
-    if ($conn->query($sql) === TRUE) {
-        echo "Trip created successfully!";
-    } else {
-        echo "Error: " . $sql . "<br>" . $conn->error;
-    }
-}
-
-$conn->close();
+<?php 
+include 'create_setup.php'    ;
 ?>
 
 
@@ -55,19 +11,7 @@ $conn->close();
     <title>Create Trip</title>
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
-    <style>
-        .text-orange { color: orange; }
-        .text-grey { color: grey; }
-        .bg-orange { background-color: orange; }
-        .form-group { padding: 10px; border: 1px solid #ddd; border-radius: 5px; margin-bottom: 15px; }
-        .sidebar { position: fixed; top: 0; left: 0; width: 200px; height: 100%; background-color: #343a40; padding-top: 20px; overflow-y: auto; }
-        .sidebar a { color: #fff; padding: 15px; text-decoration: none; display: block; }
-        .sidebar a:hover { background-color: #ff8c00; }
-        .main-content { margin-left: 200px; padding: 20px; height: 100vh; overflow-y: auto; }
-        .back-button { display: inline-block; padding: 10px 15px; background-color: #343a40; color: #fff; border: none; cursor: pointer; text-align: center; }
-        .back-button:hover { background-color: #ff8c00; }
-        .form-container { max-width: 1600px; margin: 0 auto; }
-    </style>
+    <link rel="stylesheet"href = "css/create_trip.css">
 </head>
 <body>
 
@@ -201,22 +145,7 @@ $conn->close();
             <div id="distance" class="text-center mt-3 text-grey"></div>
         </div>
     </div>
-    <script>
-        // JavaScript function to populate the day field based on the selected date
-        function populateDay() {
-            var dateInput = document.getElementById('date').value;
-            var dayInput = document.getElementById('day');
-            
-            if (dateInput) {
-                var date = new Date(dateInput);
-                var options = { weekday: 'long' }; // Display day in full format
-                var day = new Intl.DateTimeFormat('en-US', options).format(date);
-                dayInput.value = day;
-            } else {
-                dayInput.value = ''; // Clear the day field if no date is selected
-            }
-        }
-    </script>
+    <script src="js/create_trip.js"></script>
     
 </body>
 </html>

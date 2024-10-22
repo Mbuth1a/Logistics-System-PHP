@@ -106,7 +106,8 @@ $conn->close();
   <div class="navbar">
     <h2></h2>
     <button class="btn btn-danger" id="logout-btn">
-      <i class="fas fa-sign-out-alt"></i> Logout
+      <i class="fas fa-sign-out-alt"></i>
+      <a href="logout.php">Logout</a>
     </button>
   </div>
   <br><br><br>
@@ -158,30 +159,6 @@ $conn->close();
   <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.9.3/Chart.min.js"></script>
 
   <!-- JavaScript -->
-  <script>
-    // Function to toggle sub-menu visibility
-    function toggleSubMenu(menuId) {
-        var subMenu = document.getElementById(menuId);
-
-        // Toggle between showing and hiding the submenu
-        if (subMenu.style.display === "block") {
-            subMenu.style.display = "none";
-        } else {
-            subMenu.style.display = "block";
-        }
-    }
-
-    document.getElementById('drivers-link').addEventListener('click', function() {
-        toggleSubMenu('drivers-sub-menu');
-    });
-
-    document.getElementById('codrivers-link').addEventListener('click', function() {
-        toggleSubMenu('codrivers-sub-menu');
-    });
-
-    document.getElementById('vehicles-link').addEventListener('click', function() {
-        toggleSubMenu('vehicles-sub-menu');
-    });
-  </script>
+  <script src="js/dashboard.js"></script>
 </body>
 </html>
