@@ -189,7 +189,7 @@
   <script src="js/dtms_dashboard.js"></script>
 <!-- Footer -->
 <footer>
-        &copy; <?php echo date("Y"); ?> ESCO SOLUTIONS. All rights reserved.
-    </footer>
+    <b>&copy; <?php echo date("Y"); ?> Developed by ESCO SOLUTIONS.</b>
+</footer>
 </body>
 </html>
