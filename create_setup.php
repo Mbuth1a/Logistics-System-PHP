@@ -10,12 +10,17 @@ if ($conn->connect_error) {
 $drivers_sql = "SELECT id, full_name FROM drivers WHERE id NOT IN (SELECT driver_id FROM trips WHERE trip_status = 'ongoing')";
 $drivers_result = $conn->query($drivers_sql);
 
+$drivers_sql = "SELECT id, full_name FROM drivers WHERE id NOT IN (SELECT id FROM transfers WHERE trip_status = 'ongoing')";
+$drivers_result = $conn->query($drivers_sql);
 // Fetch co-drivers who are not involved in ongoing trips
 $co_drivers_sql = "SELECT id, full_name FROM co_drivers WHERE id NOT IN (SELECT co_driver_id FROM trips WHERE trip_status = 'ongoing')";
 $co_drivers_result = $conn->query($co_drivers_sql);
 
 // Fetch vehicles that are not involved in ongoing trips
 $vehicles_sql = "SELECT id, vehicle_regno FROM vehicles WHERE id NOT IN (SELECT vehicle_id FROM trips WHERE trip_status = 'ongoing')";
+$vehicles_result = $conn->query($vehicles_sql);
+
+$vehicles_sql = "SELECT id, vehicle_regno FROM vehicles WHERE id NOT IN (SELECT id FROM transfers WHERE trip_status = 'ongoing')";
 $vehicles_result = $conn->query($vehicles_sql);
 
 // Handle form submission
@@ -25,7 +30,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $trip_time = $_POST['time'];
     $trip_description = $_POST['description'];
     $driver_id = $_POST['driver'];
-    $co_driver_id = $_POST['co_driver'];
+    // Check if 'co_driver' is set before accessing it
+    $co_driver_id = isset($_POST['co_driver']) ? $_POST['co_driver'] : null; 
     $vehicle_id = $_POST['vehicle'];
     $from_location = $_POST['from_location'];
     $stops = $_POST['stops'];

@@ -76,19 +76,21 @@ include 'create_setup.php'    ;
                     </div>
 
                     <div class="col-md-6">
-                        <div class="form-group">
-                            <label for="co_driver"><i class="fas fa-user-friends"></i> Co-Driver</label>
-                            <select class="form-control" id="co_driver" name="co_driver">
-                                <?php
-                                if ($co_drivers_result->num_rows > 0) {
-                                    while($row = $co_drivers_result->fetch_assoc()) {
-                                        echo "<option value='" . $row['id'] . "'>" . $row['full_name'] . "</option>";
-                                    }
+                    <div class="form-group">
+                        <label for="co_driver"><i class="fas fa-user-friends"></i> Co-Driver</label>
+                        <select class="form-control" id="co_driver" name="co_driver">
+                            <option value="" selected disabled>Select a Co-Driver (optional)</option> <!-- Default empty option -->
+                            <?php
+                            if ($co_drivers_result->num_rows > 0) {
+                                while ($row = $co_drivers_result->fetch_assoc()) {
+                                    echo "<option value='" . $row['id'] . "'>" . $row['full_name'] . "</option>";
                                 }
-                                ?>
-                            </select>
-                        </div>
+                            }
+                            ?>
+                        </select>
                     </div>
+                </div>
+
                     
                     <div class="col-md-6">
                         <div class="form-group">

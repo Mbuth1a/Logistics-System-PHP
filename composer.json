@@ -1,0 +1,9 @@
+{
+    "name": "user/dlms",
+    "autoload": {
+        "psr-4": {
+            "User\\Dlms\\": "src/"
+        }
+    },
+    "require": {}
+}

@@ -36,3 +36,54 @@
             }
         });
     });
+    
+    function toggleSubMenu(subMenuId, iconId) {
+        var submenu = document.getElementById(subMenuId);
+        var icon = document.getElementById(iconId);
+  
+        if (submenu.style.display === "none") {
+          submenu.style.display = "block";
+          icon.classList.remove("fa-plus");
+          icon.classList.add("fa-minus");
+        } else {
+          submenu.style.display = "none";
+          icon.classList.remove("fa-minus");
+          icon.classList.add("fa-plus");
+        }
+      }
+      
+      $(document).ready(function () {
+        // Open modal and set hidden input value for transfer ID
+        $('#endTransferModal').on('show.bs.modal', function (event) {
+            var button = $(event.relatedTarget);
+            var transferId = button.data('transfer-id');
+            $('#end-transfer-form #id').val(transferId);
+        });
+    
+        // AJAX call to submit end trip form
+        $('#submit-end-transfer').click(function () {
+            var formData = {
+                id: $('#end-transfer-form #id').val(),
+                end_odometer: $('#end-transfer-form #end-odometer').val()
+            };
+    
+            $.ajax({
+                type: 'POST',
+                url: 'end_transfer.php', // Update this URL if necessary
+                data: formData,
+                dataType: 'json',
+                success: function (response) {
+                    if (response.status === 'success') {
+                        alert('Trip ended successfully.');
+                        location.reload(); // Reload to update the trip list
+                    } else {
+                        alert('Error: ' + response.message);
+                    }
+                },
+                error: function () {
+                    alert('An error occurred while ending the trip.');
+                }
+            });
+        });
+    });
+    

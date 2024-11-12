@@ -1,39 +1,47 @@
-function openFuelModal(tripId, vehicle, tripDate, fromLocation, toLocation) {
-    $('#tripId').val(tripId);
-    $('#vehicle').val(vehicle);
-    $('#tripDate').val(tripDate);
-    $('#fromLocation').val(fromLocation);
-    $('#toLocation').val(toLocation);
-    $('#fuelModal').modal('show');
+function openAssignFuelModal(tripData) {
+    document.getElementById('modalTripId').textContent = tripData.trip_id;
+    document.getElementById('tripId').value = tripData.trip_id;
+    new bootstrap.Modal(document.getElementById('assignFuelModal')).show();
 }
 
-$(document).ready(function() {
-    $('#saveFuelBtn').click(function() {
-        const tripId = $('#tripId').val();
-        const fuelConsumed = $('#fuelConsumed').val();
-        const csrfToken = $('#csrfToken').val();
+function assignFuel() {
+    const form = document.getElementById('assignFuelForm');
+    const formData = new FormData(form);
 
-        $.ajax({
-            url: 'save_fuel.php',
-            type: 'POST',
-            data: {
-                tripId: tripId,
-                fuelConsumed: fuelConsumed,
-                csrfToken: csrfToken
-            },
-            dataType: 'json',
-            success: function(response) {
-                if (response.status === 'success') {
-                    alert('Fuel record saved successfully');
-                    $('#fuelModal').modal('hide');
-                    location.reload();
-                } else {
-                    alert('Error: ' + response.message);
-                }
-            },
-            error: function() {
-                alert('An error occurred while saving the fuel record');
-            }
-        });
+    fetch('fuel_records.php', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'success') {
+            alert(data.message);
+            const tripId = data.trip_id;
+            const tripRow = document.getElementById('trip-row-' + tripId);
+            tripRow.remove();
+            moveToDoneFuel(data); // Function to update the Done Fuel table
+        } else {
+            alert(data.message);
+        }
     });
-});
+}
+
+function moveToDoneFuel(data) {
+    const doneFuelTableBody = document.getElementById('doneFuelTableBody');
+    const newRow = document.createElement('tr');
+    newRow.innerHTML = `
+        <td>${data.trip_id}</td>
+        <td>${data.trip_date}</td>
+        <td>${data.trip_time}</td>
+        <td>${data.trip_day}</td>
+        <td>${data.trip_description}</td>
+        <td>${data.driver_full_name}</td>
+        <td>${data.co_driver_full_name}</td>
+        <td>${data.vehicle_regno}</td>
+        <td>${data.from_location}</td>
+        <td>${data.stops}</td>
+        <td>${data.to_location}</td>
+        <td>${data.fuel_consumed}</td>
+    `;
+    doneFuelTableBody.appendChild(newRow);
+}

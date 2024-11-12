@@ -18,7 +18,7 @@ $sql = "SELECT
             trips.trip_id, 
             trips.trip_day, 
             trips.trip_time, 
-            drivers.full_name AS driver_full_name, 
+            drivers.full_name AS driver_full_name, +
             co_drivers.full_name AS co_driver_full_name, 
             vehicles.vehicle_regno AS vehicle_regno, 
             trips.from_location, 
@@ -79,37 +79,38 @@ if ($result->num_rows > 0) {
 }
 
 // Check if form is submitted
-if ($_SERVER['REQUEST_METHOD'] == 'POST') {
-    // Fetch trip ID and total weight from the form
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $trip_id = $_POST['trip_id'];
     $total_weight = $_POST['total_weight_of_products'];
-    $products = json_decode($_POST['products_data'], true); // Decode the JSON data
+    $products = json_decode($_POST['products_data'], true);
 
     if ($trip_id && $total_weight && count($products) > 0) {
-        // Insert trip load into the database
+        // Insert into load_trip table
         $insertTripLoad = $conn->prepare("INSERT INTO load_trip (trip_id, total_weight) VALUES (?, ?)");
         $insertTripLoad->bind_param("id", $trip_id, $total_weight);
 
         if ($insertTripLoad->execute()) {
-            $tripLoadId = $insertTripLoad->insert_id; // Get the ID of the newly inserted trip load
+            $tripLoadId = $insertTripLoad->insert_id;
 
-            // Insert each product associated with the trip
+            // Insert products into load_trip_products table
             $insertProduct = $conn->prepare("INSERT INTO load_trip_products (load_trip_id, product_description, quantity, total_weight) VALUES (?, ?, ?, ?)");
             foreach ($products as $product) {
-                $insertProduct->bind_param("iiid", $tripLoadId, $product['id'], $product['quantity'], $product['total_weight']);
+                $description = $product['product_description'];
+                $quantity = $product['quantity'];
+                $weight = $product['total_weight'];
+                $insertProduct->bind_param("isid", $tripLoadId, $description, $quantity, $weight);
                 $insertProduct->execute();
             }
-            $successMsg = 'Trip loaded successfully with all selected products.';
+            $successMsg = 'Trip loaded successfully with products.';
             $insertProduct->close();
         } else {
             $errorMsg = 'Error: Unable to load the trip. Please try again.';
         }
         $insertTripLoad->close();
     } else {
-        $errorMsg = 'Please select a trip and add at least one product before submitting.';
+        $errorMsg = 'Please upload a valid Excel file and select a trip.';
     }
 }
-
 // Close the connection
 $conn->close();
 ?>
@@ -153,9 +154,18 @@ $conn->close();
                     <?php echo $tripOptions; ?>
                 </select>
             </div>
+                
+            
 
             <div id="product-section" style="display: none;">
                 <h3 class="text-center text-orange">Add Products</h3>
+                  <!-- File Upload for Excel -->
+                <div class="form-group">
+                    <label for="excelFile"><i class="fas fa-file-excel"></i> Upload Excel File</label>
+                    <input type="file" id="excelFile" accept=".xlsx, .xls" class="form-control" onchange="processExcel()">
+                </div>      
+                    
+                    
                 <div class="form-group">
                     <label for="product_search"><i class="fas fa-search"></i> Search Product</label>
                     <div class="input-group mb-2">
@@ -193,5 +203,76 @@ $conn->close();
     </div>
 
     <script src="js/load_trip.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.1/xlsx.full.min.js"></script>
+    <script>
+        function processExcel() {
+    const fileInput = document.getElementById('excelFile');
+    const file = fileInput.files[0];
+    
+    if (file) {
+        const reader = new FileReader();
+        reader.onload = function (e) {
+            const data = new Uint8Array(e.target.result);
+            const workbook = XLSX.read(data, { type: 'array' });
+            const sheet = workbook.Sheets[workbook.SheetNames[0]];
+            const jsonData = XLSX.utils.sheet_to_json(sheet, { header: 1 });
+
+            parseExcelData(jsonData);
+        };
+        reader.readAsArrayBuffer(file);
+    }
+}
+
+function parseExcelData(data) {
+    const headers = data[0]; // First row as headers
+    const products = [];
+    let totalWeight = 0;
+
+    // Get column indices based on uppercase header names
+    const itemDescIndex = headers.indexOf("ITEM DESCRIPTION");
+    const quantityIndex = headers.indexOf("QUANTITY");
+    const tonnageIndex = headers.indexOf("TONNAGE");
+
+    if (itemDescIndex === -1 || quantityIndex === -1 || tonnageIndex === -1) {
+        alert("Required columns not found in the sheet.");
+        return;
+    }
+
+    // Loop through rows starting from the second row (index 1)
+    for (let i = 1; i < data.length; i++) {
+        const row = data[i];
+        const itemDescription = row[itemDescIndex];
+        const quantity = parseInt(row[quantityIndex]) || 0;
+        const tonnage = parseFloat(row[tonnageIndex]) || 0;
+
+        if (itemDescription && quantity > 0 && tonnage > 0) {
+            products.push({
+                product_description: itemDescription,
+                quantity: quantity,
+                total_weight: tonnage
+            });
+            totalWeight += tonnage;
+        }
+    }
+
+    document.getElementById('total_weight_of_products').value = totalWeight;
+    document.getElementById('products_data').value = JSON.stringify(products);
+
+    displayProducts(products);
+}
+
+function displayProducts(products) {
+    const productsList = document.getElementById('products-list');
+    productsList.innerHTML = "<h4>Loaded Products:</h4>";
+
+    products.forEach((product, index) => {
+        productsList.innerHTML += `
+            <p>${index + 1}. ${product.product_description} - Quantity: ${product.quantity}, Total Weight: ${product.total_weight}</p>
+        `;
+    });
+}
+
+    </script>
+   
 </body>
 </html>

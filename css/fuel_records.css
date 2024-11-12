@@ -1,70 +1,72 @@
+body {
+    background-color: #1e1e1e;
+    color: #f5f5f5;
+    overflow-x: hidden; /* Prevent horizontal scrollbar */
+}
+
 .sidebar {
-    height: 100vh;
-    position: fixed;
-    width: 200px;
-    background-color: #343a40;
-    color: white;
-    padding-top: 20px;
+    background-color: #282828;
+    padding: 20px;
+    height: 100vh; /* Full height of the viewport */
+    position: fixed; /* Fixes the sidebar to the left */
+    top: 0; /* Aligns the sidebar to the top */
+    left: 0; /* Aligns the sidebar to the left */
+    width: 250px; /* Set a width for the sidebar */
+    overflow-y: auto; /* Adds scroll to sidebar if content exceeds height */
 }
+
 .sidebar a {
-    color: white;
-    display: block;
-    padding: 10px;
+    color: #f5f5f5;
     text-decoration: none;
+    display: block;
+    margin-bottom: 20px;
+    padding: 10px;
+    transition: background-color 0.3s ease;
 }
+
 .sidebar a:hover {
     background-color: orange;
-    color: white;
 }
-.content {
-    margin-left: 220px;
+
+.main-content {
     padding: 20px;
+    margin-left: 270px; /* Adjust margin to account for the sidebar width */
 }
-.text-red { color: red; }
-.bg-red { background-color: red; color: white; }
-.card-header {
-    cursor: pointer;
-    background-color: #343a40;
-    color: white;
+.btn-assign-fuel {
+    position: fixed;
+
+}
+.btn-assign-fuel {
+    background-color: orange;
     border: none;
 }
-.card-header:hover {
-    background-color: orange;
-    color: white;
+
+.btn-assign-fuel:hover {
+    color: darkorange;
 }
-.btn-primary:hover {
-    background-color: orange;
-    border-color: orange;
+
+.modal-header,
+.modal-footer {
+    background-color: #282828;
 }
-.monthly-consumption {
+
+.modal-content {
+    color: #f5f5f5;
+    background-color: #3e3e3e;
+}
+
+.assigned-fuel-list {
+    margin-top: 20px;
+    background-color: #282828;
+    padding: 10px;
+    border-radius: 5px;
+}
+
+.trip-table {
     margin-top: 20px;
 }
-.vehicle-tab {
-    cursor: pointer;
-    padding: 10px;
-    border: 1px solid #ddd;
-    border-radius: 4px;
-    margin-top: 5px;
-    background-color: #f8f9fa;
-}
-.vehicle-tab:hover {
-    background-color: #ffe5b4;
-}
-.collapse {
-    transition: height 0.35s ease;
-}
-.vehicle-details {
-    color: black;
-    font-size: 1.2em;
-    font-weight: bold;
-}
-.form-inline input {
-    margin-right: 10px;
-}
-.month-card {
-    margin-bottom: 15px;
-    cursor: pointer;
-}
-.month-card:hover {
-    background-color: #f8f9fa;
+
+.trip-table th,
+.trip-table td {
+    text-align: center;
 }
