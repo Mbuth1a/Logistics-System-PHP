@@ -15,40 +15,36 @@ $successMsg = '';
 // Fetch trips from the database, excluding those already loaded in the load_trip table
 $tripOptions = '';
 $sql = "SELECT 
-            trips.trip_id, 
-            trips.trip_day, 
-            trips.trip_time, 
-            drivers.full_name AS driver_full_name, 
-            co_drivers.full_name AS co_driver_full_name, 
-            vehicles.vehicle_regno AS vehicle_regno, 
-            trips.from_location, 
-            trips.stops, 
-            trips.to_location
-        FROM trips
-        LEFT JOIN drivers ON trips.driver_id = drivers.id
-        LEFT JOIN co_drivers ON trips.co_driver_id = co_drivers.id
-        LEFT JOIN vehicles ON trips.vehicle_id = vehicles.id
-        LEFT JOIN load_trip ON trips.trip_id = load_trip.trip_id
-        WHERE load_trip.trip_id IS NULL"; // Filter out trips already in load_trip table
+            export_trips.export_id, 
+            export_trips.export_day, 
+            export_trips.customer_name, 
+            export_trips.export_date, 
+            export_trips.proforma, 
+            export_trips.truck_regno, 
+            export_trips.truck_no
+        
+        FROM export_trips
+        LEFT JOIN load_export ON export_trips.export_id = load_export.export_id
+        WHERE load_export.id IS NULL"; // Filter out trips already in load_export table
 
 $result = $conn->query($sql);
 
 if ($result->num_rows > 0) {
     while ($row = $result->fetch_assoc()) {
-        $tripDisplay =  $row['trip_day'] . ', ' . 
-                        $row['trip_time'] . ', ' . 
-                        $row['driver_full_name'] . ', ' . 
-                        $row['co_driver_full_name'] . ', ' . 
-                        $row['vehicle_regno'] . ', ' . 
-                        $row['from_location'] . ', ' . 
-                        $row['stops'] . ', ' . 
-                        $row['to_location'];
-
-        $tripOptions .= '<option value="' . $row['trip_id'] . '">' . $tripDisplay . '</option>';
+        $tripDisplay = $row['export_id'] . ', ' . 
+               $row['export_day'] . ', ' . 
+               $row['customer_name'] . ', ' . 
+               $row['export_date'] . ', ' . 
+               $row['proforma'] . ', ' . 
+               $row['truck_regno'] . ', ' . 
+               $row['truck_no'];
+        // Corrected option tag generation
+        $tripOptions .= '<option value="' . $row['export_id'] . '" data-trip-date="' . $row['export_date'] . '" data-customer-name="' . $row['customer_name'] . '">' . $tripDisplay . '</option>';
     }
 } else {
     $tripOptions = '<option value="" disabled>No trips available</option>';
 }
+
 
 // Fetch products from the database
 $productOptions = '';
@@ -65,7 +61,7 @@ $result = $conn->query($sql);
 
 if ($result->num_rows > 0) {
     while ($row = $result->fetch_assoc()) {
-        $productDisplay =  $row['product_description'] . ', ' . 
+        $productDisplay = $row['product_description'] . ', ' . 
                           $row['stock_code'] . ', ' .  
                           $row['product'] . ', ' . 
                           $row['unit_of_measure'] . ', ' . 
@@ -80,20 +76,20 @@ if ($result->num_rows > 0) {
 
 // Check if form is submitted
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $trip_id = $_POST['trip_id'];
+    $export_id = $_POST['export_id'];
     $total_weight = $_POST['total_weight_of_products'];
     $products = json_decode($_POST['products_data'], true);
 
-    if ($trip_id && $total_weight && count($products) > 0) {
+    if ($export_id && $total_weight && count($products) > 0) {
         // Insert into load_trip table
-        $insertTripLoad = $conn->prepare("INSERT INTO load_trip (trip_id, total_weight) VALUES (?, ?)");
-        $insertTripLoad->bind_param("id", $trip_id, $total_weight);
+        $insertTripLoad = $conn->prepare("INSERT INTO load_export (export_id, total_weight) VALUES (?, ?)");
+        $insertTripLoad->bind_param("id", $export_id, $total_weight);
 
         if ($insertTripLoad->execute()) {
             $tripLoadId = $insertTripLoad->insert_id;
 
             // Insert products into load_trip_products table
-            $insertProduct = $conn->prepare("INSERT INTO load_trip_products (load_trip_id, product_description, quantity, total_weight) VALUES (?, ?, ?, ?)");
+            $insertProduct = $conn->prepare("INSERT INTO load_export_products (load_export_id, product_description, quantity, total_weight) VALUES (?, ?, ?, ?)");
             foreach ($products as $product) {
                 $description = $product['product_description'];
                 $quantity = $product['quantity'];
@@ -103,6 +99,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
             $successMsg = 'Trip loaded successfully with products.';
             $insertProduct->close();
+            
+             // Redirect to avoid resubmission
+             header("Location: load_export.php?success=1");
+             exit();
         } else {
             $errorMsg = 'Error: Unable to load the trip. Please try again.';
         }
@@ -111,8 +111,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $errorMsg = 'Please upload a valid Excel file and select a trip.';
     }
 }
-
-
 // Close the connection
 $conn->close();
 ?>
@@ -122,19 +120,17 @@ $conn->close();
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Load Trip</title>
+    <title>Load Export Trip</title>
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="css/load_trip.css">
 </head>
-
 <body>
     <div class="sidebar">
         <a href="dtms_dashboard.php"><i class="fas fa-arrow-left"></i> Back to Dashboard</a>
     </div>
     <div class="container-fluid main-content col-md-10">
-        <h2 class="text-center text-orange"><i class="fas fa-box"></i> Load Trip</h2>
+        <h2 class="text-center text-orange"><i class="fas fa-box"></i> Load Export Trip</h2>
 
         <!-- JavaScript code to display success or error messages -->
         <?php if ($successMsg): ?>
@@ -149,11 +145,11 @@ $conn->close();
             </script>
         <?php endif; ?>
 
-        <form id="loadTripForm" method="post" action="load_trip.php">
+        <form id="loadTripForm" method="post" action="load_export.php">
             <input type="hidden" name="csrf_token" value="<?php echo $_SESSION['csrf_token']; ?>">
             <div class="form-group">
                 <label for="id_trip"><i class="fas fa-cube"></i> Trip</label>
-                <select id="id_trip" name="trip_id" class="form-control" onchange="tripSelected()">
+                <select id="id_trip" name="export_id" class="form-control" onchange="tripSelected()">
                     <option value="" disabled selected>Select a trip</option>
                     <?php echo $tripOptions; ?>
                 </select>
@@ -163,13 +159,8 @@ $conn->close();
 
             <div id="product-section" style="display: none;">
                 <h3 class="text-center text-orange">Load Products</h3>
-                <a href="inventory.php" class="btn btn-primary bg-orange">Add New Product</a>
-    
                   <!-- File Upload for Excel -->
-                <div class="form-group">
-                    <label for="excelFile"><i class="fas fa-file-excel"></i> Upload Excel File</label>
-                    <input type="file" id="excelFile" accept=".xlsx, .xls" class="form-control" onchange="processExcel()">
-                </div>      
+                  <a href="inventory.php" class="btn btn-primary bg-orange">Add New Product</a>
                     
                     
                 <div class="form-group">
@@ -207,17 +198,11 @@ $conn->close();
             <button type="submit" class="btn btn-primary bg-orange btn-block mt-4"><i class="fas fa-paper-plane"></i> Submit</button>
         </form>
     </div>
-        
- 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>        
-    <script src="js/load_trip.js"></script>
+
+    <script src="js/load_export.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.1/xlsx.full.min.js"></script>
-    
-    </script>
     <script>
-
-
-
+        
     function processExcel() {
     const fileInput = document.getElementById('excelFile');
     const file = fileInput.files[0];

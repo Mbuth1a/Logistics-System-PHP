@@ -43,7 +43,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         }
 
         // Redirect to the same page to prevent form resubmission
-        header("Location: " . $_SERVER['PHP_SELF']);
+        header("Location: load_walk_in.php");
         exit;
     } else {
         $success_message = "Please fill in all fields.";
@@ -53,6 +53,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 // Close the database connection
 $conn->close();
 ?>
+
 
 <!DOCTYPE html>
 <html lang="en">
@@ -71,7 +72,7 @@ $conn->close();
 </div>
 <div class="main-content">
 
-    <h2 class="text-center text-orange mb-4"><i class="fas fa-road"></i> Walk In Trip</h2>
+    <h2 class="text-center text-orange mb-4"><i class="fas fa-road"></i> WALK  IN CUSTOMERS</h2>
 
     <!-- Display success message at the top of the page -->
     <?php if ($success_message): ?>
@@ -85,28 +86,28 @@ $conn->close();
             <input type="hidden" name="csrf_token" value="">
             <div class="row">
 
+                
                 <div class="col-md-6">
                     <div class="form-group">
-                        <label for="customer_name"><i class="fas fa-user"></i> Customer Name</label>
-                        <input type="text" class="form-control" id="customer_name" name="customer_name">
+                        <label for="customer_name"><i class="fas fa-user"></i> CUSTOMER NAME</label>
+                        <input type="text" class="form-control" id="customer_name" name="customer_name" required>
                     </div>
                 </div>
-
                 <div class="col-md-6">
                     <div class="form-group">
-                        <label for="walk_trip_date"><i class="fas fa-calendar-alt"></i> Date</label>
+                        <label for="walk_trip_date"><i class="fas fa-calendar-alt"></i> DATE</label>
                         <input type="date" class="form-control" id="walk_trip_date" name="walk_trip_date" required onchange="populateDay()">
                     </div>
                 </div>
                 <div class="col-md-6">
                     <div class="form-group">
-                        <label for="walk_trip_time"><i class="fas fa-clock"></i> Time</label>
+                        <label for="walk_trip_time"><i class="fas fa-clock"></i> TIME</label>
                         <input type="time" class="form-control" id="walk_trip_time" name="walk_trip_time" required>
                     </div>
                 </div>
                 <div class="col-md-6">
                     <div class="form-group">
-                        <label for="walk_trip_day"><i class="fas fa-sun"></i> Day</label>
+                        <label for="walk_trip_day"><i class="fas fa-sun"></i> DAY</label>
                         <input type="text" class="form-control" id="walk_trip_day" name="walk_trip_day" readonly>
                     </div>
                 </div>

@@ -150,15 +150,12 @@ $conn->close();
 
     
   </div>
-
-  <!-- Include the external JavaScript file -->
-  <script src="/path/to/static/dashboard.js"></script> <!-- Replace with your actual static path -->
+  <script src="js/dashboard.js"></script>
   <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.1/dist/umd/popper.min.js"></script>
   <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.9.3/Chart.min.js"></script>
 
-  <!-- JavaScript -->
-  <script src="js/dashboard.js"></script>
+  
 </body>
 </html>

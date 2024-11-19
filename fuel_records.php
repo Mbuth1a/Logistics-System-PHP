@@ -182,8 +182,7 @@ $doneFuelResult = $conn->query($doneFuelQuery);
                     <th>From Location</th>
                     <th>Stops</th>
                     <th>To Location</th>
-                    <th>Fuel Consumed</th>
-                  
+                    <th>Fuel Consumed</th>          
                 </tr>
             </thead>
             <tbody id="doneFuelTableBody">

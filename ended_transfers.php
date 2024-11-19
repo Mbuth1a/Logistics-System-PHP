@@ -14,7 +14,7 @@ $totalPages = ceil($totalRecords / $limit);  // Calculate total pages
 
 // Fetch ended trips with pagination using LIMIT and OFFSET
 $query = "SELECT 
-            transfers.id, 
+            transfers.transfer_id, 
             transfers.customer_name,
             vehicles.vehicle_regno,  
             drivers.full_name AS driver_full_name, 

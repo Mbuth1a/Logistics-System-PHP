@@ -51,7 +51,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $conn->close();
 
     // Redirect back to the page to display the message
-    header("Location: export_trip.php");
+    header("Location: load_export.php");
     exit();
 }
 ?>

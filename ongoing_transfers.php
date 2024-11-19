@@ -3,7 +3,7 @@ include 'connection.php';  // Include the database connection file
 
 // Fetch ongoing trips with full names and vehicle registration using IDs
 $query = "SELECT 
-            transfers.id, 
+            transfers.transfer_id, 
             vehicles.vehicle_regno,  
             drivers.full_name AS driver_full_name, 
             transfers.destination, 

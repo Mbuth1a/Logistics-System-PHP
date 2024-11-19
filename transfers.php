@@ -51,7 +51,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     if (mysqli_query($conn, $sql)) {
         echo "Trip created successfully!";
         // Optionally, redirect to another page after success
-         header("Location: dtms_dashboard.php");
+         header("Location: load_transfer.php");
         exit();
     } else {
         echo "Error: " . $sql . "<br>" . mysqli_error($conn);

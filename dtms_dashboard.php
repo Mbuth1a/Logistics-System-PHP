@@ -6,7 +6,7 @@
   <title>DANCO LTD Logistics System</title>
   <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
-  <link rel="stylesheet" href="/path/to/your/css/dtms_dashboard.css"> <!-- Replace with the actual path to your CSS file -->
+<!-- Replace with the actual path to your CSS file -->
   <link rel="stylesheet"href = "css/dtms_dashboard.css">
 </head>
 <body>
@@ -15,7 +15,7 @@
     <ul class="nav flex-column">
       <li class="nav-item">
         <a class="nav-link" id="trips-link" href="#" onclick="toggleSubMenu('trips-submenu', 'trips-plus')">
-          <i class="fas fa-route"></i> TRIPS <i class="fas fa-plus" id="trips-plus"></i>
+          <i class="fas fa-route"></i>CREATE TRIPS <i class="fas fa-plus" id="trips-plus"></i>
         </a>
         <ul class="nav flex-column sub-menu" id="trips-submenu" style="display: none;">
           <li class="nav-item">
@@ -38,18 +38,64 @@
               <i class="fas fa-exchange-alt"></i> Transfers
             </a>
           </li>
-          <li class="nav-item">
+          
+        </ul>
+      </li>
+          
+          
+      <li class="nav-item">
+        <a class="nav-link" id="load-link" href="#" onclick="toggleSubMenu('load-submenu', 'load-plus')">
+          <i class="fas fa-tools"></i> LOAD TRIPS <i class="fas fa-plus" id="load-plus"></i>
+        </a>
+        <ul class="nav flex-column sub-menu" id="load-submenu" style="display: none;">
+        <li class="nav-item">
             <a class="nav-link" href="load_trip.php">
-              <i class="fas fa-tasks"></i> Load Trip
+              <i class="fas fa-map-marker-alt"></i> Local Trips
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="load_export.php">
+              <i class="fas fa-file-export"></i> Export Trips
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="load_transfer.php">
+              <i class="fas fa-exchange-alt"></i> Transfer Trips
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="load_walk_in.php">
+              <i class="fas fa-walking"></i> Walk In Customers
             </a>
           </li>
         </ul>
-      </li>
+      </li>    
+          
+          
       <li class="nav-item">
         <a class="nav-link" href="expenses.php">
           <i class="fas fa-dollar-sign"></i> EXPENSES
         </a>
       </li>
+      <li class="nav-item">
+        <a class="nav-link" id="fuel-link" href="#" onclick="toggleSubMenu('fuel-submenu', 'fuel-plus')">
+          <i class="fas fa-tools"></i> FUEL RECORDS <i class="fas fa-plus" id="fuel-plus"></i>
+        </a>
+        <ul class="nav flex-column sub-menu" id="fuel-submenu" style="display: none;">
+          <li class="nav-item">
+            <a class="nav-link" href="fuel_records.php">
+              <i class="fas fa-cogs"></i> Local Trips
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="transfer_fuel.php">
+              <i class="fas fa-wrench"></i> Transfer Trips
+            </a>
+          </li>
+          
+        </ul>
+      </li>
+
       <li class="nav-item">
         <a class="nav-link" id="maintenance-link" href="#" onclick="toggleSubMenu('maintenance-submenu', 'maintenance-plus')">
           <i class="fas fa-tools"></i> MAINTENANCE & REMINDERS <i class="fas fa-plus" id="maintenance-plus"></i>
@@ -151,6 +197,8 @@
 
 
   <div class="container">
+    <br>
+    <br>
     <h2 class="alert-heading position-sticky">Ongoing Trips</h2>
     <table class="table table-dark">
       <thead>
@@ -209,12 +257,12 @@
       <thead>
         <tr>
           <th>Customer</th>
+          <th>Vehicle</th>
+          <th>Driver</th>
+          <th>To</th>
           <th>Date</th>
           <th>Time</th>
-          <th>Day</th>
-          <th>Driver</th>
-          <th>Vehicle</th>
-          <th>To</th>
+          <th>Day</th>   
           <th>Start Odometer</th>
           <th>End Odometer</th>
           <th>Actual Distance</th>
