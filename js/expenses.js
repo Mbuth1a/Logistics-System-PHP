@@ -16,15 +16,20 @@ function assignExpense() {
     .then(data => {
         if (data.status === 'success') {
             alert(data.message);
-            const tripId = data.trip_id;
-            const tripRow = document.getElementById('trip-row-' + tripId);
-            tripRow.remove();
-            moveToDoneExpenses(data); // Function to update the Done Expenses table
+            // Reload the page after a short delay to reflect changes
+            setTimeout(() => {
+                location.reload();
+            }, 1000); // Reload after 1 second
         } else {
             alert(data.message);
         }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('An error occurred. Please try again.');
     });
 }
+
 
 function moveToDoneExpenses(data) {
     const doneExpensesTableBody = document.getElementById('doneExpensesTableBody');

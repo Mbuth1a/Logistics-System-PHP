@@ -1,6 +1,6 @@
 function openAssignTransferFuelModal(tripData) {
-    document.getElementById('modalTripId').textContent = tripData.id; // Adjusted based on expected ID
-    document.getElementById('transferId').value = tripData.id; // Adjusted here as well
+    document.getElementById('modalTripId').textContent = tripData.transfer_id; // Adjusted based on expected ID
+    document.getElementById('transferId').value = tripData.transfer_id; // Adjusted here as well
     new bootstrap.Modal(document.getElementById('assignTransferFuelModal')).show();
 }
 

@@ -181,9 +181,9 @@
                 <form id="end-transfer-form">
                     <div class="form-group">
                         <label for="end-odometer">Enter End Odometer Reading</label>
-                        <input type="number" class="form-control" id="end-odometer" name="end_odometer" required>
+                        <input type="number" class="form-control" id="end-odometer-reading" name="end_odometer" required>
                     </div>
-                    <input type="hidden" id="id" name="id">
+                    <input type="hidden" id="transfer-id" name="transfer_id">
                 </form>
             </div>
             <div class="modal-footer">

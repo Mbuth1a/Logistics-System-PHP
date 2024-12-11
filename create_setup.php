@@ -6,21 +6,28 @@ if ($conn->connect_error) {
     die("Connection failed: " . $conn->connect_error);
 }
 
-// Fetch drivers who are not involved in ongoing trips
-$drivers_sql = "SELECT id, full_name FROM drivers WHERE id NOT IN (SELECT driver_id FROM trips WHERE trip_status = 'ongoing')";
+$drivers_sql = "
+SELECT d.id, d.full_name 
+FROM drivers d
+LEFT JOIN trips t ON d.id = t.driver_id AND t.trip_status = 'ongoing'
+LEFT JOIN transfers tr ON d.id = tr.driver AND tr.trip_status = 'ongoing'
+WHERE t.driver_id IS NULL AND tr.driver IS NULL";
 $drivers_result = $conn->query($drivers_sql);
 
-$drivers_sql = "SELECT id, full_name FROM drivers WHERE id NOT IN (SELECT id FROM transfers WHERE trip_status = 'ongoing')";
-$drivers_result = $conn->query($drivers_sql);
+
 // Fetch co-drivers who are not involved in ongoing trips
 $co_drivers_sql = "SELECT id, full_name FROM co_drivers WHERE id NOT IN (SELECT co_driver_id FROM trips WHERE trip_status = 'ongoing')";
 $co_drivers_result = $conn->query($co_drivers_sql);
 
 // Fetch vehicles that are not involved in ongoing trips
-$vehicles_sql = "SELECT id, vehicle_regno FROM vehicles WHERE id NOT IN (SELECT vehicle_id FROM trips WHERE trip_status = 'ongoing')";
-$vehicles_result = $conn->query($vehicles_sql);
-
-$vehicles_sql = "SELECT id, vehicle_regno FROM vehicles WHERE id NOT IN (SELECT id FROM transfers WHERE trip_status = 'ongoing')";
+$vehicles_sql = "
+SELECT id, vehicle_regno 
+FROM vehicles 
+WHERE id NOT IN (
+    SELECT vehicle_id FROM trips WHERE trip_status = 'ongoing'
+    UNION
+    SELECT vehicle FROM transfers WHERE trip_status = 'ongoing'
+)";
 $vehicles_result = $conn->query($vehicles_sql);
 
 // Handle form submission

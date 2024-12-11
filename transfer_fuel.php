@@ -44,7 +44,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 // Fetch trips that have not been assigned fuel records
 $tripQuery = "
     SELECT 
-        transfers.id,
+        transfers.transfer_id,
         
         transfers.customer_name,
         transfers.transfer_date,
@@ -60,7 +60,7 @@ $tripQuery = "
     LEFT JOIN 
         vehicles ON transfers.vehicle = vehicles.id
     WHERE 
-        transfers.id NOT IN (SELECT transfer_id FROM transfer_fuel)
+        transfers.transfer_id NOT IN (SELECT transfer_id FROM transfer_fuel)
     ORDER BY 
         transfers.transfer_date ASC
 ";
@@ -69,7 +69,7 @@ $tripResult = $conn->query($tripQuery);
 // Fetch assigned fuel records with pagination
 $doneFuelQuery = "
     SELECT 
-        transfers.id,
+        transfers.transfer_id,
         transfer_fuel.transfer_id,
         transfers.customer_name,
         transfers.transfer_date,
@@ -82,7 +82,7 @@ $doneFuelQuery = "
     FROM 
         transfer_fuel
     INNER JOIN 
-        transfers ON transfer_fuel.transfer_id = transfers.id
+        transfers ON transfer_fuel.transfer_id = transfers.transfer_id
     LEFT JOIN 
         drivers ON transfers.driver = drivers.id
     LEFT JOIN 
@@ -140,8 +140,8 @@ $doneFuelResult = $conn->query($doneFuelQuery);
                     <tbody>
                         <?php if ($tripResult->num_rows > 0): ?>
                             <?php while ($trip = $tripResult->fetch_assoc()): ?>
-                                <tr id="trip-row-<?= $trip['id'] ?>">
-                                    <td><?= $trip['id'] ?></td>
+                                <tr id="trip-row-<?= $trip['transfer_id'] ?>">
+                                    <td><?= $trip['transfer_id'] ?></td>
                                     <td><?= $trip['customer_name'] ?></td>
                                     <td><?= $trip['transfer_date'] ?></td>
                                     <td><?= $trip['transfer_time'] ?></td>

@@ -35,7 +35,7 @@ if (!$result) {
 if ($result->num_rows > 0) {
     while ($row = $result->fetch_assoc()) {
         echo "<tr>
-                <td>" . htmlspecialchars($row['id']) . "</td>
+                <td>" . htmlspecialchars($row['transfer_id']) . "</td>
                 <td>" . htmlspecialchars($row['customer_name']) . "</td>
                 <td>" . htmlspecialchars($row['transfer_date']) . "</td>
                 <td>" . htmlspecialchars($row['transfer_time']) . "</td>
@@ -45,7 +45,7 @@ if ($result->num_rows > 0) {
                 <td>" . htmlspecialchars($row['destination']) . "</td>
                 <td>" . htmlspecialchars($row['start_odometer']) . "</td>
                 <td>" . htmlspecialchars($row['trip_status']) . "</td>
-                <td><button class='btn btn-primary' data-toggle='modal' data-target='#endTransferModal' data-transfer-id='" . htmlspecialchars($row['id']) . "'>End Trip</button></td>
+                <td><button class='btn btn-primary' data-toggle='modal' data-target='#endTransferModal' data-transfer-id='" . htmlspecialchars($row['transfer_id']) . "'>End Trip</button></td>
               </tr>";
     }
 } else {

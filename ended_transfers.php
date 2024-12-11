@@ -54,9 +54,9 @@ if ($result->num_rows > 0) {
 
         // Update the actual distance in the database if it's not already set
         if ($row['actual_distance'] === null) {
-            $updateQuery = "UPDATE trips SET actual_distance = ? WHERE trip_id = ?";
+            $updateQuery = "UPDATE transfers SET actual_distance = ? WHERE transfer_id = ?";
             $stmt = $conn->prepare($updateQuery);
-            $stmt->bind_param("di", $actual_distance, $row['trip_id']);
+            $stmt->bind_param("di", $actual_distance, $row['transfer_id']);
             $stmt->execute();
             $stmt->close();
         }

@@ -15,13 +15,13 @@ $successMsg = '';
 // Fetch trips from the database, excluding those already loaded in the load_trip table
 $tripOptions = '';
 $sql = "SELECT 
-            walk_trips.walk_id, 
-            walk_trips.walk_trip_day, 
-            walk_trips.walk_trip_date, 
-            walk_trips.walk_trip_time
-        FROM walk_trips
-        LEFT JOIN load_walk_in ON walk_trips.walk_id = load_walk_in.id
-        WHERE load_walk_in.id IS NULL"; // Filter out trips already in load_trip table
+    walk_trips.walk_id, 
+    walk_trips.walk_trip_day, 
+    walk_trips.walk_trip_date, 
+    walk_trips.walk_trip_time
+FROM walk_trips
+LEFT JOIN load_walk_in ON walk_trips.walk_id = load_walk_in.walk_in_id
+WHERE load_walk_in.walk_in_id IS NULL"; // Filter out trips already in load_trip table
 
 $result = $conn->query($sql);
 
