@@ -1,6 +1,6 @@
 <?php
 // Include database connection
-require_once 'db_connection.php';
+require_once 'connection.php';
 
 // Initialize variables
 $error = '';
@@ -26,9 +26,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     echo "</pre>";
     exit; // Stop execution to check the output
 
-    // Fetch the selected date and time
-    $date = $_POST['date'] ?? ''; // Default to empty string if not set
-    $time = $_POST['time'] ?? '';
+   
 
     if (!empty($date) && !empty($time)) {
         // Calculate the day of the week

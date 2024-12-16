@@ -23,57 +23,72 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     // Fetch data from the database for the selected date range
     $sql = "
-            SELECT 
-            vehicle_regno,
-            SUM(total_fuel_consumed) AS total_fuel_consumed,
-            SUM(total_driver_expenses) AS total_driver_expenses,
-            SUM(total_co_driver_expenses) AS total_co_driver_expenses,
-            SUM(total_load_carried) AS total_load_carried,
-            SUM(total_garage_expenses) AS total_garage_expenses,
-            SUM(total_distance_covered) AS total_distance_covered,
-            IF(SUM(total_distance_covered) > 0, 
-            SUM(total_fuel_consumed) / SUM(total_distance_covered), 
-            0) AS consumption_per_km
-        FROM (
-            -- Regular trips
-            SELECT 
-                v.vehicle_regno,
-                SUM(f.fuel_consumed) AS total_fuel_consumed,
-                SUM(e.driver_expense) AS total_driver_expenses,
-                SUM(e.co_driver_expense) AS total_co_driver_expenses,
-                SUM(lp.total_weight) AS total_load_carried,
-                SUM(g.garage_expense) AS total_garage_expenses,
-                SUM(t.actual_distance) AS total_distance_covered
-            FROM trips t
-            LEFT JOIN vehicles v ON t.vehicle_id = v.id
-            LEFT JOIN fuel f ON t.trip_id = f.trip_id
-            LEFT JOIN expenses e ON t.trip_id = e.trip_id
-            LEFT JOIN load_trip lp ON t.trip_id = lp.trip_id
-            LEFT JOIN garage g ON t.vehicle_id = g.vehicle_id
-                AND (g.checked_in_at BETWEEN '$startDate' AND '$endDate' OR g.checked_out_at BETWEEN '$startDate' AND '$endDate')
-            WHERE t.trip_date BETWEEN '$startDate' AND '$endDate'
-            GROUP BY v.vehicle_regno
-            
-            UNION ALL
-            
-            -- Transfer trips
-            SELECT 
-                v.vehicle_regno,
-                SUM(tf.fuel_consumed) AS total_fuel_consumed,
-                0 AS total_driver_expenses, -- No driver expenses for transfers
-                0 AS total_co_driver_expenses, -- No co-driver expenses for transfers
-                0 AS total_load_carried, -- No load carried in transfers
-                0 AS total_garage_expenses, -- No garage expenses for transfers
-                SUM(tr.actual_distance) AS total_distance_covered
-            FROM transfers tr
-            LEFT JOIN vehicles v ON tr.vehicle = v.id
-            LEFT JOIN transfer_fuel tf ON tr.transfer_id = tf.transfer_id
-            WHERE tr.transfer_date BETWEEN '$startDate' AND '$endDate'
-            GROUP BY v.vehicle_regno
-        ) combined_data
-        GROUP BY vehicle_regno
+    SELECT 
+        vehicle_regno,
+        SUM(total_fuel_consumed) AS total_fuel_consumed,
+        SUM(total_driver_expenses) AS total_driver_expenses,
+        SUM(total_co_driver_expenses) AS total_co_driver_expenses,
+        SUM(total_load_carried) AS total_load_carried,
+        SUM(total_garage_expenses) AS total_garage_expenses,
+        SUM(total_distance_covered) AS total_distance_covered,
+        IF(SUM(total_distance_covered) > 0, 
+           SUM(total_fuel_consumed) / SUM(total_distance_covered), 
+           0) AS consumption_per_km
+    FROM (
+        -- Regular trips
+        SELECT 
+            v.vehicle_regno,
+            SUM(f.fuel_consumed) AS total_fuel_consumed,
+            SUM(e.driver_expense) AS total_driver_expenses,
+            SUM(e.co_driver_expense) AS total_co_driver_expenses,
+            SUM(lp.total_weight) AS total_load_carried,
+            0 AS total_garage_expenses,
+            SUM(t.actual_distance) AS total_distance_covered
+        FROM trips t
+        LEFT JOIN vehicles v ON t.vehicle_id = v.id
+        LEFT JOIN fuel f ON t.trip_id = f.trip_id
+        LEFT JOIN expenses e ON t.trip_id = e.trip_id
+        LEFT JOIN load_trip lp ON t.trip_id = lp.trip_id
+        WHERE t.trip_date BETWEEN '$startDate' AND '$endDate'
+        GROUP BY v.vehicle_regno
 
-            ";
+        UNION ALL
+
+        -- Transfer trips
+        SELECT 
+            v.vehicle_regno,
+            SUM(tf.fuel_consumed) AS total_fuel_consumed,
+            0 AS total_driver_expenses,
+            0 AS total_co_driver_expenses,
+            0 AS total_load_carried,
+            0 AS total_garage_expenses,
+            SUM(tr.actual_distance) AS total_distance_covered
+        FROM transfers tr
+        LEFT JOIN vehicles v ON tr.vehicle = v.id
+        LEFT JOIN transfer_fuel tf ON tr.transfer_id = tf.transfer_id
+        WHERE tr.transfer_date BETWEEN '$startDate' AND '$endDate'
+        GROUP BY v.vehicle_regno
+
+        UNION ALL
+
+        -- Vehicles with garage expenses but no trips
+        SELECT 
+            v.vehicle_regno,
+            0 AS total_fuel_consumed,
+            0 AS total_driver_expenses,
+            0 AS total_co_driver_expenses,
+            0 AS total_load_carried,
+            SUM(g.garage_expense) AS total_garage_expenses,
+            0 AS total_distance_covered
+        FROM garage g
+        LEFT JOIN vehicles v ON g.vehicle_id = v.id
+        WHERE g.checked_in_at BETWEEN '$startDate' AND '$endDate' 
+           OR g.checked_out_at BETWEEN '$startDate' AND '$endDate'
+        GROUP BY v.vehicle_regno
+    ) combined_data
+    GROUP BY vehicle_regno
+";
+
 
     $result = $conn->query($sql);
 
