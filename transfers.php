@@ -15,7 +15,6 @@ WHERE t.driver_id IS NULL AND tr.driver IS NULL";
 $drivers_result = $conn->query($drivers_sql);
 
 
-
 $vehicles_sql = "
 SELECT id, vehicle_regno 
 FROM vehicles 
@@ -23,9 +22,10 @@ WHERE id NOT IN (
     SELECT vehicle_id FROM trips WHERE trip_status = 'ongoing'
     UNION
     SELECT vehicle FROM transfers WHERE trip_status = 'ongoing'
+    UNION
+    SELECT vehicle_id FROM garage WHERE checked_out_at IS NULL
 )";
 $vehicles_result = $conn->query($vehicles_sql);
-
 
 
 
