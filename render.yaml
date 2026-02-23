@@ -4,16 +4,16 @@ services:
     env: node
     region: oregon
     buildCommand: |
-      # Install PHP for running the application
-      apt-get update && apt-get install -y php php-mysql php-cli || true
+      # Install PHP and required extensions
+      apt-get update && apt-get install -y php php-cli php-mysql php-curl php-gd php-mbstring php-xml php-xmlrpc || true
       # Install composer dependencies
       composer install --no-dev --optimize-autoloader || true
     startCommand: |
       # Wait for database to be ready
-      sleep 10
-      # Import database schema
-      mysql -h $DB_HOST -u $DB_USER -p$DB_PASSWORD $DB_NAME < db/dlms.sql || echo "Database import skipped or failed"
-      # Start PHP built-in server using yarn
+      sleep 5
+      # Import database schema if needed
+      mysql -h $DB_HOST -u $DB_USER -p$DB_PASSWORD $DB_NAME < db/dlms.sql 2>/dev/null || true
+      # Start PHP server using yarn
       yarn start
     envVars:
       - key: DB_HOST
