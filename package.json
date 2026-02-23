@@ -1,0 +1,13 @@
+{
+  "name": "logistics-system-php",
+  "version": "1.0.0",
+  "description": "DANCO Logistics System PHP",
+  "scripts": {
+    "start": "php -S 0.0.0.0:$PORT -t .",
+    "postinstall": "echo 'Dependencies installed'"
+  },
+  "engines": {
+    "node": ">=14",
+    "php": ">=7.4"
+  }
+}
