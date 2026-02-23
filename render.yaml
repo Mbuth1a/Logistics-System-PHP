@@ -1,0 +1,39 @@
+services:
+  - type: web
+    name: logistics-system-php
+    env: php
+    region: oregon
+    buildCommand: |
+      # Install dependencies if needed
+      composer install --no-dev --optimize-autoloader || true
+    startCommand: |
+      # Wait for database to be ready
+      sleep 10
+      # Import database schema
+      mysql -h $DB_HOST -u $DB_USER -p$DB_PASSWORD $DB_NAME < db/dlms.sql || echo "Database import skipped or failed"
+      # Start PHP built-in server
+      php -S 0.0.0.0:$PORT -t .
+    envVars:
+      - key: DB_HOST
+        fromDatabase:
+          name: logistics-db
+          property: host
+      - key: DB_NAME
+        fromDatabase:
+          name: logistics-db
+          property: database
+      - key: DB_USER
+        fromDatabase:
+          name: logistics-db
+          property: user
+      - key: DB_PASSWORD
+        fromDatabase:
+          name: logistics-db
+          property: password
+      - key: APP_ENV
+        value: production
+
+databases:
+  - name: logistics-db
+    databaseName: dlms
+    user: dlms_user

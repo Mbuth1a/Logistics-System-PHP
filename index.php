@@ -5,10 +5,10 @@ require_once 'connection.php'; // Include your database connection file
 // Check if the user is already logged in
 if (isset($_SESSION['username'])) {
     if ($_SESSION['role'] === 'ADMIN') {
-        header("Location: /DCL/DLMS/dashboard.php");
+        header("Location: dashboard.php");
         exit();
     } else {
-        header("Location: /DCL/DLMS/dtms_dashboard.php");
+        header("Location: dtms_dashboard.php");
         exit();
     }
 }
@@ -37,9 +37,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
             // Redirect based on user role
             if ($user['role'] === 'ADMIN') {
-                header("Location: /DCL/DLMS/dashboard.php");
+                header("Location: dashboard.php");
             } else {
-                header("Location: /DCL/DLMS/dtms_dashboard.php");
+                header("Location: dtms_dashboard.php");
             }
             exit();
         } else {
