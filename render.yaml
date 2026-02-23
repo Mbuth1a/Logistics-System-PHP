@@ -1,18 +1,20 @@
 services:
   - type: web
     name: logistics-system-php
-    env: php
+    env: node
     region: oregon
     buildCommand: |
-      # Install dependencies if needed
+      # Install PHP for running the application
+      apt-get update && apt-get install -y php php-mysql php-cli || true
+      # Install composer dependencies
       composer install --no-dev --optimize-autoloader || true
     startCommand: |
       # Wait for database to be ready
       sleep 10
       # Import database schema
       mysql -h $DB_HOST -u $DB_USER -p$DB_PASSWORD $DB_NAME < db/dlms.sql || echo "Database import skipped or failed"
-      # Start PHP built-in server
-      php -S 0.0.0.0:$PORT -t .
+      # Start PHP built-in server using yarn
+      yarn start
     envVars:
       - key: DB_HOST
         fromDatabase:
